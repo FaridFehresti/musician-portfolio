@@ -58,7 +58,7 @@ export default function About() {
           >
             <div style={{
               aspectRatio: '1', borderRadius: 12, overflow: 'hidden',
-              boxShadow: '0 24px 70px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,229,255,0.1)',
+              boxShadow: '0 24px 70px rgba(0,0,0,0.8), 0 0 0 1px color-mix(in srgb, var(--accent-2) 10%, transparent)',
               background: 'linear-gradient(145deg, #1a1208, #0a0a0a)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
@@ -66,14 +66,14 @@ export default function About() {
               <svg width="55%" height="55%" viewBox="0 0 200 200" opacity="0.11">
                 {[90, 78, 66, 54, 42, 30, 18].map(r => (
                   <circle key={r} cx="100" cy="100" r={r}
-                    fill="none" stroke="#ff2fd0" strokeWidth="0.8" />
+                    fill="none" stroke="var(--accent)" strokeWidth="0.8" />
                 ))}
-                <circle cx="100" cy="100" r="8" fill="#ff2fd0" opacity="0.4" />
+                <circle cx="100" cy="100" r="8" fill="var(--accent)" opacity="0.4" />
               </svg>
               <p style={{
                 position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center',
                 fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                fontSize: 13, color: 'rgba(0,229,255,0.35)',
+                fontSize: 13, color: 'color-mix(in srgb, var(--accent-2) 35%, transparent)',
               }}>
                 Add your photo here
               </p>
@@ -113,12 +113,12 @@ export default function About() {
                     textDecoration: 'none', letterSpacing: '0.06em',
                     transition: 'border-color 0.2s, color 0.2s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent-2) 40%, transparent)' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.borderColor = 'rgba(240,236,224,0.1)' }}
                 >
                   <span style={{
                     width: 20, height: 20, borderRadius: '50%',
-                    background: 'rgba(0,229,255,0.12)',
+                    background: 'color-mix(in srgb, var(--accent-2) 12%, transparent)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: 700, fontSize: 7, color: 'var(--color-accent)', flexShrink: 0,
                   }}>
@@ -136,7 +136,7 @@ export default function About() {
           variants={FADE_UP} initial="hidden" whileInView="visible" viewport={{ once: true }}
           className="mb-24"
         >
-          <div style={{ width: 48, height: 1, background: 'rgba(0,229,255,0.2)', marginBottom: 28 }} />
+          <div style={{ width: 48, height: 1, background: 'color-mix(in srgb, var(--accent-2) 20%, transparent)', marginBottom: 28 }} />
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 18 }}>
             The Sound
           </p>
@@ -186,7 +186,7 @@ export default function About() {
               style={{
                 padding: '13px 34px', borderRadius: 40,
                 background: 'transparent', color: 'var(--color-accent)',
-                border: '1px solid rgba(0,229,255,0.4)', cursor: 'pointer',
+                border: '1px solid color-mix(in srgb, var(--accent-2) 40%, transparent)', cursor: 'pointer',
                 fontFamily: 'var(--font-mono)', fontSize: 11,
                 letterSpacing: '0.12em', textTransform: 'uppercase',
               }}

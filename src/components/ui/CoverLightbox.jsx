@@ -43,7 +43,7 @@ export function CoverLightbox({ src, title, onClose }) {
           position:     'relative',
           borderRadius: 12,
           overflow:     'hidden',
-          boxShadow:    '0 40px 120px rgba(0,0,0,0.95), 0 0 0 1px rgba(0,229,255,0.15)',
+          boxShadow:    '0 40px 120px rgba(0,0,0,0.95), 0 0 0 1px color-mix(in srgb, var(--accent-2) 15%, transparent)',
           maxWidth:     'min(80vmin, 600px)',
           maxHeight:    'min(80vmin, 600px)',
           width:        '100%',
@@ -63,9 +63,9 @@ export function CoverLightbox({ src, title, onClose }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="80" height="80" viewBox="0 0 80 80" opacity="0.3">
-              <circle cx="40" cy="40" r="36" fill="none" stroke="#ff2fd0" strokeWidth="1" />
-              <circle cx="40" cy="40" r="20" fill="none" stroke="#ff2fd0" strokeWidth="0.8" />
-              <circle cx="40" cy="40" r="6"  fill="#ff2fd0" />
+              <circle cx="40" cy="40" r="36" fill="none" stroke="var(--accent)" strokeWidth="1" />
+              <circle cx="40" cy="40" r="20" fill="none" stroke="var(--accent)" strokeWidth="0.8" />
+              <circle cx="40" cy="40" r="6"  fill="var(--accent)" />
             </svg>
           </div>
         )}
@@ -111,7 +111,7 @@ export function CoverLightbox({ src, title, onClose }) {
             backdropFilter: 'blur(4px)',
             transition:     'color 0.15s, border-color 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent-2) 40%, transparent)' }}
           onMouseLeave={e => { e.currentTarget.style.color = 'rgba(240,236,224,0.7)'; e.currentTarget.style.borderColor = 'rgba(240,236,224,0.15)' }}
         >
           ✕

@@ -1,27 +1,35 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { usePlayerStore } from '../../store/playerStore'
+import { useBreakpoint } from '../../hooks/useViewport'
 import { HoloVinylCard } from './HoloVinylCard'
 
 /**
- * HeroDeck — the interactive holographic deck on the home hero.
- * A fanned stack of cards (only the top one is "live"): click Play to start,
- * Shuffle riffles the deck and plays a random track, Next flips the top card
- * top-to-bottom and advances in order.
+ * HeroDeck — interactive holographic coverflow on the home hero.
+ * Focused card front-and-centre; the rest fan out symmetrically left/right
+ * behind it. Click any card to bring it to focus (springs to centre);
+ * Shuffle riffles; Next flips the top card. Fully responsive — shrinks and
+ * narrows the fan on tablet/mobile so it never overflows.
  */
 
-const HERO_SIZE = 260
-const VISIBLE = 5
+const LAYOUT = {
+  desktop: { size: 300, visible: 5, step1: 122, stepN: 112, riffle: 150 },
+  tablet:  { size: 250, visible: 5, step1: 100, stepN: 92,  riffle: 124 },
+  mobile:  { size: 196, visible: 3, step1: 56,  stepN: 0,   riffle: 70 },
+}
 
-function slot(i) {
+function slot(i, L) {
+  if (i === 0) return { x: 0, y: 0, scale: 1, rotate: 0, rotateX: 0, opacity: 1, zIndex: 50 }
+  const depth = Math.ceil(i / 2)
+  const dir = i % 2 === 1 ? 1 : -1
   return {
-    x: i * 13,
-    y: i * 12,
-    scale: 1 - i * 0.06,
-    rotate: i * 1.6,
+    x: dir * (L.step1 + (depth - 1) * L.stepN),
+    y: depth * 4,
+    scale: 1 - depth * 0.1,
+    rotate: dir * depth * 5,
     rotateX: 0,
-    opacity: i < VISIBLE ? 1 - i * 0.05 : 0,
-    zIndex: 50 - i,
+    opacity: Math.max(0.3, 1 - depth * 0.32),
+    zIndex: 50 - depth,
   }
 }
 
@@ -36,11 +44,14 @@ function shuffleArray(arr) {
 
 export function HeroDeck({ tracks }) {
   const { currentTrack, isPlaying, setQueue, loadTrack, play, pause } = usePlayerStore()
+  const bp = useBreakpoint()
+  const L = LAYOUT[bp] || LAYOUT.desktop
+
   const [order, setOrder] = useState(() => tracks.slice())
   const [flipping, setFlipping] = useState(false)
   const [riffling, setRiffling] = useState(false)
 
-  const visible = order.slice(0, VISIBLE)
+  const visible = order.slice(0, L.visible)
   const top = order[0]
   const topActive = currentTrack?.id === top?.id
 
@@ -49,12 +60,18 @@ export function HeroDeck({ tracks }) {
     loadTrack(track)
   }
 
-  function onTopPlay() {
-    if (topActive) {
-      if (isPlaying) pause()
-      else play()
+  function clickCard(track) {
+    if (order[0]?.id === track.id) {
+      if (currentTrack?.id === track.id) {
+        if (isPlaying) pause()
+        else play()
+      } else {
+        playTrack(track)
+      }
     } else {
-      playTrack(top)
+      const newOrder = [track, ...order.filter(t => t.id !== track.id)]
+      setOrder(newOrder)
+      playTrack(track, newOrder)
     }
   }
 
@@ -80,35 +97,42 @@ export function HeroDeck({ tracks }) {
     }, 240)
   }
 
+  const mid = Math.floor(L.visible / 2)
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 26 }}>
-      <div style={{ position: 'relative', width: 460, height: 350 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: bp === 'mobile' ? 24 : 34, width: '100%' }}>
+      <div style={{ position: 'relative', width: '100%', height: L.size + (bp === 'mobile' ? 64 : 90) }}>
         {visible.map((track, i) => {
           const isTop = i === 0
           const target = riffling
-            ? { x: (i - 2) * 74, y: 0, rotate: (i - 2) * 13, rotateX: 0, scale: 0.9, opacity: 1, zIndex: 50 - i }
+            ? { x: (i - mid) * L.riffle, y: 0, rotate: (i - mid) * 11, rotateX: 0, scale: 0.9, opacity: 1, zIndex: 50 - Math.abs(i - mid) }
             : isTop && flipping
               ? { x: 0, y: -32, rotateX: -94, scale: 0.94, opacity: 0, zIndex: 60 }
-              : slot(i)
+              : slot(i, L)
 
           return (
             <motion.div
               key={track.id}
               initial={false}
               animate={target}
-              transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-              style={{ position: 'absolute', top: 30, left: 26, transformPerspective: 1100, transformStyle: 'preserve-3d' }}
+              transition={{ type: 'spring', stiffness: 240, damping: 26 }}
+              style={{
+                position: 'absolute',
+                top: '50%', left: '50%',
+                marginTop: -L.size / 2, marginLeft: -L.size / 2,
+                transformPerspective: 1200, transformStyle: 'preserve-3d',
+              }}
             >
               <HoloVinylCard
                 track={track}
-                size={HERO_SIZE}
+                size={L.size}
                 variant="hero"
-                diskEnabled={isTop}
+                diskEnabled={false}
                 tiltEnabled={isTop && !flipping && !riffling}
                 active={currentTrack?.id === track.id}
                 playing={currentTrack?.id === track.id && isPlaying}
                 showPlayButton={isTop}
-                onPlay={isTop ? onTopPlay : () => playTrack(track)}
+                onPlay={() => clickCard(track)}
               />
             </motion.div>
           )
@@ -116,7 +140,7 @@ export function HeroDeck({ tracks }) {
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <DeckButton label="Shuffle" onClick={onShuffle}>
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 4h2.5l7 8H14" /><path d="M2 12h2.5l2-2.3" /><path d="M9.5 5.3 11.5 4 14 4" />
@@ -126,18 +150,18 @@ export function HeroDeck({ tracks }) {
         </DeckButton>
 
         <motion.button
-          onClick={onTopPlay}
-          whileHover={{ scale: 1.08, backgroundColor: 'rgba(255,47,208,0.22)' }}
+          onClick={() => clickCard(top)}
+          whileHover={{ scale: 1.08, backgroundColor: 'color-mix(in srgb, var(--accent) 22%, transparent)' }}
           whileTap={{ scale: 0.94 }}
           aria-label={topActive && isPlaying ? 'Pause' : 'Play'}
           style={{
             width: 64, height: 64, borderRadius: '50%',
             border: '2px solid var(--neon-magenta)',
-            background: 'rgba(255,47,208,0.1)',
+            background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
             color: 'var(--neon-magenta)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: topActive && isPlaying ? '0 0 24px var(--glow-magenta)' : '0 0 12px var(--glow-magenta)',
-            transition: 'box-shadow 0.3s',
+            transition: 'box-shadow 0.3s', flexShrink: 0,
           }}
         >
           {topActive && isPlaying
@@ -163,13 +187,13 @@ function DeckButton({ label, onClick, children }) {
       aria-label={label}
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '9px 18px', borderRadius: 40,
-        border: '1px solid rgba(0,229,255,0.4)',
-        background: 'rgba(13,7,22,0.6)',
-        color: 'rgba(0,229,255,0.85)',
+        padding: '9px 16px', borderRadius: 40,
+        border: '1px solid color-mix(in srgb, var(--accent-2) 40%, transparent)',
+        background: 'color-mix(in srgb, var(--surface) 60%, transparent)',
+        color: 'color-mix(in srgb, var(--accent-2) 85%, transparent)',
         fontFamily: 'var(--font-mono)', fontSize: 11,
-        letterSpacing: '0.12em', textTransform: 'uppercase',
-        cursor: 'pointer', backdropFilter: 'blur(6px)',
+        letterSpacing: '0.1em', textTransform: 'uppercase',
+        cursor: 'pointer', backdropFilter: 'blur(6px)', whiteSpace: 'nowrap',
       }}
     >
       {children}

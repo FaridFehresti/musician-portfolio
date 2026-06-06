@@ -4,16 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#0b0612',
-        surface: '#140a22',
-        'surface-2': '#1d0f33',
-        accent: '#ff2fd0',
-        'accent-warm': '#00e5ff',
-        text: '#f3e9ff',
-        muted: '#8b7da6',
-        'neon-cyan': '#00e5ff',
-        'neon-magenta': '#ff2fd0',
-        'neon-violet': '#7a4dff',
+        bg: 'var(--bg)',
+        surface: 'var(--surface)',
+        'surface-2': 'var(--surface-2)',
+        accent: 'var(--accent)',
+        'accent-warm': 'var(--accent-2)',
+        text: 'var(--text)',
+        muted: 'var(--muted)',
+        'neon-cyan': 'var(--accent-2)',
+        'neon-magenta': 'var(--accent)',
+        'neon-violet': 'var(--accent-2)',
       },
       fontFamily: {
         display: ['"Playfair Display"', 'serif'],

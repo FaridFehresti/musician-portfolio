@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PlayerBar } from './components/player/PlayerBar'
@@ -7,6 +8,9 @@ import Library    from './pages/Library'
 import NowPlaying from './pages/NowPlaying'
 import About      from './pages/About'
 import Donate     from './pages/Donate'
+
+// Lazy-loaded so Three.js + the /lab bundle stay out of the main chunk.
+const Lab = lazy(() => import('./pages/Lab'))
 
 const PAGE_TRANSITION = {
   initial:  { opacity: 0 },
@@ -25,18 +29,34 @@ function AnimatedRoutes() {
           <Route path="/now-playing" element={<NowPlaying />} />
           <Route path="/about"       element={<About />} />
           <Route path="/donate"      element={<Donate />} />
+          <Route path="/lab"         element={
+            <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>
+              <Lab />
+            </Suspense>
+          } />
         </Routes>
       </motion.div>
     </AnimatePresence>
   )
 }
 
+// Hides the global chrome on /lab so the journey is full-screen and immersive.
+function Shell() {
+  const { pathname } = useLocation()
+  const immersive = pathname === '/lab'
+  return (
+    <>
+      {!immersive && <Nav />}
+      <AnimatedRoutes />
+      {!immersive && <PlayerBar />}
+    </>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Nav />
-      <AnimatedRoutes />
-      <PlayerBar />
+      <Shell />
     </BrowserRouter>
   )
 }

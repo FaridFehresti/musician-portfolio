@@ -2,33 +2,140 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme system ────────────────────────────────────────────────────
+   Each theme sets the semantic palette; legacy token names alias onto it
+   so every existing var(--color-*) / var(--neon-*) reference re-themes for
+   free. Default = "midnight". Switch by setting <html data-theme="…">.   */
 :root {
-  /* ── Synthwave neon palette ──────────────────────────────────────
-     Token names are unchanged so every existing var(--color-*) ref
-     re-themes for free; only the values flipped gold → neon. */
-  --color-bg: #0b0612;          /* deep violet-black */
-  --color-surface: #140a22;
-  --color-surface-2: #1d0f33;
-  --color-accent: #ff2fd0;      /* neon magenta (was gold) */
-  --color-accent-warm: #00e5ff; /* neon cyan (alias used around the app) */
-  --color-text: #f3e9ff;        /* near-white, violet tint */
-  --color-muted: #8b7da6;
-
-  /* Raw neon helpers */
-  --neon-cyan: #00e5ff;
-  --neon-magenta: #ff2fd0;
-  --neon-violet: #7a4dff;
-  --glow-cyan: rgba(0, 229, 255, 0.45);
-  --glow-magenta: rgba(255, 47, 208, 0.45);
-
-  /* Holographic foil colour stops */
-  --foil-1: #00e5ff;
-  --foil-2: #7a4dff;
-  --foil-3: #ff2fd0;
+  /* legacy aliases → semantic tokens */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-warm: var(--accent-2);
+  --neon-magenta: var(--accent);
+  --neon-cyan: var(--accent-2);
+  --neon-violet: var(--accent-2);
+  --glow-magenta: var(--glow);
+  --glow-cyan: var(--glow-2);
 
   --font-display: 'Playfair Display', serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'DM Mono', monospace;
+
+  /* default palette — Midnight */
+  --bg: #0b1020;
+  --surface: #131a2e;
+  --surface-2: #1b2440;
+  --text: #e6ecff;
+  --muted: #8893b5;
+  --accent: #6d8bff;
+  --accent-2: #22d3ee;
+  --on-accent: #06091a;
+  --glow: rgba(109, 139, 255, 0.42);
+  --glow-2: rgba(34, 211, 238, 0.42);
+  --foil-1: #6d8bff;
+  --foil-2: #a78bfa;
+  --foil-3: #22d3ee;
+  --card-1: #131a2e;
+  --card-2: #0c1120;
+}
+
+/* 1 ── Aurora (light, iridescent) */
+html[data-theme='aurora'] {
+  --bg: #f4f2fb;
+  --surface: #ffffff;
+  --surface-2: #ece9f6;
+  --text: #1c1830;
+  --muted: #6b6685;
+  --accent: #6d4dff;
+  --accent-2: #00b3c4;
+  --on-accent: #ffffff;
+  --glow: rgba(109, 77, 255, 0.30);
+  --glow-2: rgba(0, 179, 196, 0.30);
+  --foil-1: #6d4dff;
+  --foil-2: #00b3c4;
+  --foil-3: #ff6fae;
+  --card-1: #20203a;
+  --card-2: #14142a;
+}
+
+/* 2 ── Sandstone (warm light) */
+html[data-theme='sandstone'] {
+  --bg: #ece4d6;
+  --surface: #f7f1e6;
+  --surface-2: #e0d6c4;
+  --text: #2a2014;
+  --muted: #7a6e5c;
+  --accent: #b8430f;
+  --accent-2: #1f8a70;
+  --on-accent: #fff7ed;
+  --glow: rgba(184, 67, 15, 0.28);
+  --glow-2: rgba(31, 138, 112, 0.28);
+  --foil-1: #ff8a4c;
+  --foil-2: #ffcf5c;
+  --foil-3: #2bbf9e;
+  --card-1: #241a12;
+  --card-2: #160f0a;
+}
+
+/* 3 ── Slate (mid neutral) */
+html[data-theme='slate'] {
+  --bg: #2a303c;
+  --surface: #333a48;
+  --surface-2: #3d4555;
+  --text: #eef2f8;
+  --muted: #9aa6b8;
+  --accent: #38bdf8;
+  --accent-2: #34d399;
+  --on-accent: #06121f;
+  --glow: rgba(56, 189, 248, 0.36);
+  --glow-2: rgba(52, 211, 153, 0.36);
+  --foil-1: #38bdf8;
+  --foil-2: #818cf8;
+  --foil-3: #34d399;
+  --card-1: #1c2230;
+  --card-2: #141926;
+}
+
+/* 4 ── Midnight (dark) — explicit copy of the default for the switcher */
+html[data-theme='midnight'] {
+  --bg: #0b1020;
+  --surface: #131a2e;
+  --surface-2: #1b2440;
+  --text: #e6ecff;
+  --muted: #8893b5;
+  --accent: #6d8bff;
+  --accent-2: #22d3ee;
+  --on-accent: #06091a;
+  --glow: rgba(109, 139, 255, 0.42);
+  --glow-2: rgba(34, 211, 238, 0.42);
+  --foil-1: #6d8bff;
+  --foil-2: #a78bfa;
+  --foil-3: #22d3ee;
+  --card-1: #131a2e;
+  --card-2: #0c1120;
+}
+
+/* 5 ── Synthwave (darkest, neon) */
+html[data-theme='synthwave'] {
+  --bg: #0b0612;
+  --surface: #140a22;
+  --surface-2: #1d0f33;
+  --text: #f3e9ff;
+  --muted: #8b7da6;
+  --accent: #ff2fd0;
+  --accent-2: #00e5ff;
+  --on-accent: #0b0612;
+  --glow: rgba(255, 47, 208, 0.45);
+  --glow-2: rgba(0, 229, 255, 0.45);
+  --foil-1: #00e5ff;
+  --foil-2: #7a4dff;
+  --foil-3: #ff2fd0;
+  --card-1: #181231;
+  --card-2: #0d0920;
 }
 
 *,
@@ -41,6 +148,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -50,8 +158,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  /* vinyl cursor */
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%230b0612' stroke='%2300e5ff' stroke-width='1'/%3E%3Ccircle cx='12' cy='12' r='7' fill='none' stroke='%2300e5ff' stroke-width='0.5'/%3E%3Ccircle cx='12' cy='12' r='4' fill='none' stroke='%2300e5ff' stroke-width='0.5'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%23ff2fd0'/%3E%3C/svg%3E") 12 12, auto;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 /* Custom scrollbar */
@@ -102,6 +209,19 @@ body {
   transition: opacity 0.4s ease;
 }
 
+/* 0 — glass light: a soft lit film tracking the pointer, giving the foil a
+   luminous base so the holographic colour reads on dark cover art. */
+.holo-light-spot {
+  mix-blend-mode: screen;
+  background: radial-gradient(
+    64% 64% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(176, 224, 255, 0.2) 36%,
+    transparent 70%
+  );
+  opacity: calc(0.5 + 0.5 * var(--hyp));
+}
+
 /* 1 — colour-shift foil: neon rainbow that sweeps with the pointer */
 .holo-foil-color {
   mix-blend-mode: color-dodge;
@@ -112,7 +232,7 @@ body {
   );
   background-size: 280% 280%;
   background-position: calc(var(--posx) * 1%) calc(var(--posy) * 1%);
-  opacity: calc(0.7 * var(--holo) * (0.5 + 0.5 * var(--hyp)));
+  opacity: calc(0.9 * var(--holo) * (0.45 + 0.55 * var(--hyp)));
 }
 
 /* 2 — glints: steep white interference bands (the holographic "lines") */
@@ -126,7 +246,7 @@ body {
   );
   background-size: 220% 220%;
   background-position: calc(var(--posy) * -1.2%) calc(var(--posx) * 1.2%);
-  opacity: calc(0.65 * var(--holo) * (0.4 + 0.6 * var(--hyp)));
+  opacity: calc(0.6 * var(--holo) * (0.35 + 0.65 * var(--hyp)));
 }
 
 /* 3 — sparkle: SVG noise punched into bright dots; parallaxes with pointer.
@@ -135,34 +255,25 @@ body {
   mix-blend-mode: color-dodge;
   background-size: 170px 170px;
   background-position: calc(var(--mx) * 1.4px) calc(var(--my) * 1.4px);
-  opacity: calc(0.8 * var(--holo) * (0.2 + 0.8 * var(--hyp)));
+  opacity: calc(0.85 * var(--holo) * (0.15 + 0.85 * var(--hyp)));
 }
 
-/* Glass sheen — bright reflective streak; always on, intensifies on tilt */
-.holo-glass-sheen {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
+/* 4 — specular: a hot white hotspot at the pointer = the 3D light catching
+   the glass surface. */
+.holo-spec {
   mix-blend-mode: screen;
-  background-image: linear-gradient(
-    105deg,
-    transparent 26%,
-    rgba(255, 255, 255, 0.5) 47%,
-    rgba(255, 255, 255, 0.08) 56%,
-    transparent 72%
+  background: radial-gradient(
+    26% 26% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.25) 34%,
+    transparent 62%
   );
-  background-size: 220% 220%;
-  background-position: calc(var(--posx) * 1%) calc(var(--posy) * 1%);
-  opacity: calc(0.4 + 0.5 * var(--hyp));
-  transition: opacity 0.3s ease;
-  z-index: 2;
+  opacity: calc(0.55 + 0.45 * var(--hyp));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .holo-foil-layer { transition: none !important; }
   .holo-foil-sparkle { display: none !important; }
-  .holo-glass-sheen { transition: none !important; }
 }
 
 /* Touch devices can't hover; skip the heaviest blended layer */

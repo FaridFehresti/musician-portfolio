@@ -7,56 +7,42 @@ import { GENRE_GRADIENTS, fmtDuration } from '../../data/tracks'
 export function PlayerBar() {
   const navigate = useNavigate()
   const {
-    currentTrack, isPlaying, isPaused,
-    currentTime, duration, volume,
-    play, pause, next, prev, seek, setVolume,
-    audioError,
+    currentTrack, isPlaying, currentTime, duration, volume,
+    play, pause, next, prev, seek, setVolume, audioError,
   } = usePlayerStore()
 
   const [muted, setMuted] = useState(false)
   const [prevVol, setPrevVol] = useState(0.8)
 
-  function togglePlayPause() {
-    if (isPlaying) pause()
-    else play()
-  }
-
+  function togglePlayPause() { if (isPlaying) pause(); else play() }
   function toggleMute() {
-    if (muted) {
-      setVolume(prevVol)
-      setMuted(false)
-    } else {
-      setPrevVol(volume)
-      setVolume(0)
-      setMuted(true)
-    }
+    if (muted) { setVolume(prevVol); setMuted(false) }
+    else { setPrevVol(volume); setVolume(0); setMuted(true) }
   }
+  function openNowPlaying() { navigate('/now-playing') }
 
-  const gradient = GENRE_GRADIENTS[currentTrack?.genre] || 'from-zinc-900 to-zinc-950'
+  const grad = GENRE_GRADIENTS[currentTrack?.genre] || ['#2a0533', '#10031a']
+  const progress = duration > 0 ? currentTime / duration : 0
 
   return (
     <AnimatePresence>
-      {/* Audio error banner */}
       {audioError && (
         <motion.div
           key="audio-error"
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
           onClick={() => play()}
           style={{
-            position: 'fixed', bottom: currentTrack ? 74 : 8, left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(0,229,255,0.12)', border: '1px solid rgba(0,229,255,0.4)',
-            borderRadius: 8, padding: '8px 18px',
-            fontFamily: 'var(--font-mono)', fontSize: 11,
-            color: 'var(--color-accent)', cursor: 'pointer', zIndex: 200,
-            backdropFilter: 'blur(8px)',
+            position: 'fixed', bottom: currentTrack ? 86 : 12, left: '50%', transform: 'translateX(-50%)',
+            background: 'color-mix(in srgb, var(--accent-2) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-2) 40%, transparent)',
+            borderRadius: 8, padding: '8px 18px', fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'var(--neon-cyan)', cursor: 'pointer', zIndex: 200, backdropFilter: 'blur(8px)',
           }}
         >
           ⚠ {audioError} — Click here to resume
         </motion.div>
       )}
 
-      {(currentTrack) && (
+      {currentTrack && (
         <motion.div
           initial={{ translateY: '100%' }}
           animate={{ translateY: 0 }}
@@ -64,122 +50,88 @@ export function PlayerBar() {
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className="fixed bottom-0 left-0 right-0 z-50"
           style={{
-            height: 72,
-            background: 'rgba(17,17,17,0.92)',
-            backdropFilter: 'blur(16px)',
-            borderTop: '1px solid rgba(0,229,255,0.12)',
-            WebkitBackdropFilter: 'blur(16px)',
+            height: 76,
+            background: 'color-mix(in srgb, var(--surface) 94%, transparent)',
+            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            borderTop: '1px solid color-mix(in srgb, var(--accent-2) 22%, transparent)',
           }}
         >
-          <div className="flex items-center h-full px-4 gap-4">
+          {/* Full-width seek bar along the top edge */}
+          <SeekBar progress={progress} duration={duration} onSeek={seek} />
 
-            {/* LEFT — Track info */}
-            <div className="flex items-center gap-3 w-[30%] min-w-0">
-              {/* Cover art circle */}
+          <div className="grid items-center h-full px-3 sm:px-5 gap-2" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+
+            {/* LEFT — cover + title, click anywhere → Now Playing */}
+            <button
+              onClick={openNowPlaying}
+              title="Open Now Playing"
+              className="flex items-center gap-3 min-w-0 rounded-lg py-1 pr-2"
+              style={{ background: 'transparent', cursor: 'pointer', transition: 'background 0.15s', justifySelf: 'start' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
               <div
-                className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center`}
-                style={{ boxShadow: '0 0 0 1px rgba(0,229,255,0.2)' }}
+                className="relative flex-shrink-0"
+                style={{
+                  width: 50, height: 50, borderRadius: 8, overflow: 'hidden',
+                  boxShadow: isPlaying
+                    ? '0 0 0 1.5px var(--neon-magenta), 0 0 14px var(--glow-magenta)'
+                    : '0 0 0 1px rgba(255,255,255,0.14)',
+                }}
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" opacity="0.4">
-                  <circle cx="8" cy="8" r="7" fill="none" stroke="#f0ece0" strokeWidth="0.8" />
-                  <circle cx="8" cy="8" r="4" fill="none" stroke="#f0ece0" strokeWidth="0.6" />
-                  <circle cx="8" cy="8" r="1.5" fill="#ff2fd0" />
-                </svg>
+                {currentTrack.coverArt
+                  ? <img src={currentTrack.coverArt} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${grad[0]}, ${grad[1]})` }} />}
               </div>
 
-              <div className="min-w-0">
-                <p
-                  className="truncate"
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontStyle: 'italic',
-                    fontSize: 13,
-                    color: 'var(--color-text)',
-                  }}
-                >
-                  {currentTrack?.title ?? 'No track'}
+              <div className="min-w-0 text-left">
+                <p className="truncate" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700, fontSize: 14, color: 'var(--color-text)', lineHeight: 1.2 }}>
+                  {currentTrack.title}
                 </p>
-                <p className="truncate text-xs" style={{ color: 'var(--color-muted)' }}>
-                  {currentTrack?.artist ?? '—'}
+                <p className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-muted)', letterSpacing: '0.04em' }}>
+                  {currentTrack.artist}{currentTrack.genre ? ` · ${currentTrack.genre}` : ''}
                 </p>
               </div>
-            </div>
+            </button>
 
-            {/* CENTER — Controls + progress */}
-            <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              {/* Buttons */}
-              <div className="flex items-center gap-4">
-                <IconBtn onClick={prev} label="Previous">
-                  <PrevIcon />
-                </IconBtn>
-
-                <button
+            {/* CENTER — transport + time */}
+            <div className="flex flex-col items-center gap-1" style={{ justifySelf: 'center' }}>
+              <div className="flex items-center gap-4 sm:gap-6">
+                <CtrlIcon onClick={prev} label="Previous"><PrevIcon /></CtrlIcon>
+                <motion.button
                   onClick={togglePlayPause}
-                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  whileHover={{ scale: 1.07 }} whileTap={{ scale: 0.93 }}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
                   style={{
-                    border: '1.5px solid var(--color-accent)',
-                    background: 'transparent',
-                    color: 'var(--color-accent)',
-                    transition: 'transform 0.15s ease, background 0.15s ease',
+                    width: 46, height: 46, borderRadius: '50%', border: 'none',
+                    background: 'var(--neon-magenta)', color: 'var(--on-accent)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 18px var(--glow-magenta)', cursor: 'pointer', flexShrink: 0,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.background = 'rgba(0,229,255,0.1)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'transparent' }}
                 >
-                  {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                </button>
-
-                <IconBtn onClick={next} label="Next">
-                  <NextIcon />
-                </IconBtn>
+                  {isPlaying
+                    ? <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zm5 0h3v10H9z" /></svg>
+                    : <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" style={{ marginLeft: 2 }}><path d="M4 3l9 5-9 5V3z" /></svg>}
+                </motion.button>
+                <CtrlIcon onClick={next} label="Next"><NextIcon /></CtrlIcon>
               </div>
-
-              {/* Progress bar + times */}
-              <div className="flex items-center gap-2 w-full max-w-sm">
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', whiteSpace: 'nowrap' }}>
-                  {fmtDuration(currentTime)}
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 1}
-                  step={0.5}
-                  value={currentTime}
-                  onChange={e => {
-                    seek(Number(e.target.value))
-                    // Auto-resume if was playing before scrub
-                    if (!isPlaying && !isPaused) play()
-                  }}
-                  className="flex-1"
-                  style={{
-                    accentColor: 'var(--color-accent)',
-                  }}
-                />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', whiteSpace: 'nowrap' }}>
-                  {fmtDuration(duration)}
-                </span>
-              </div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.04em' }}>
+                {fmtDuration(currentTime)} / {fmtDuration(duration)}
+              </span>
             </div>
 
-            {/* RIGHT — Volume + nav */}
-            <div className="flex items-center gap-3 w-[25%] justify-end">
-              <IconBtn onClick={toggleMute} label={muted ? 'Unmute' : 'Mute'}>
-                {muted ? <MuteIcon /> : <VolumeIcon />}
-              </IconBtn>
-
+            {/* RIGHT — volume + expand (mute always visible; slider on md+) */}
+            <div className="flex items-center gap-2 sm:gap-3" style={{ justifySelf: 'end' }}>
+              <CtrlIcon onClick={toggleMute} label={muted || volume === 0 ? 'Unmute' : 'Mute'}>
+                {muted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
+              </CtrlIcon>
               <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.02}
-                value={volume}
-                onChange={e => setVolume(Number(e.target.value))}
-                className="w-20 hidden sm:block"
-                style={{ accentColor: 'var(--color-accent)' }}
+                type="range" min={0} max={1} step={0.02} value={volume}
+                onChange={e => { setVolume(Number(e.target.value)); setMuted(false) }}
+                className="w-20 hidden md:block" aria-label="Volume"
+                style={{ accentColor: 'var(--neon-magenta)' }}
               />
-
-              <IconBtn onClick={() => navigate('/now-playing')} label="Now Playing">
-                <GramIcon />
-              </IconBtn>
+              <CtrlIcon onClick={openNowPlaying} label="Open Now Playing"><ExpandIcon /></CtrlIcon>
             </div>
           </div>
         </motion.div>
@@ -188,44 +140,46 @@ export function PlayerBar() {
   )
 }
 
-function IconBtn({ onClick, label, children }) {
+/* ─── Full-width seek bar (top edge) ──────────────────────────────── */
+function SeekBar({ progress, duration, onSeek }) {
+  return (
+    <div
+      className="group absolute top-0 left-0 right-0"
+      style={{ height: 10, cursor: 'pointer' }}
+      onClick={e => {
+        const r = e.currentTarget.getBoundingClientRect()
+        onSeek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (duration || 0))
+      }}
+    >
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'color-mix(in srgb, var(--text) 12%, transparent)' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, height: 3, width: `${progress * 100}%`, background: 'var(--neon-magenta)', boxShadow: '0 0 8px var(--glow-magenta)' }} />
+      <div
+        className="opacity-0 group-hover:opacity-100"
+        style={{ position: 'absolute', top: -3, left: `${progress * 100}%`, transform: 'translateX(-50%)', width: 10, height: 10, borderRadius: '50%', background: 'var(--neon-magenta)', boxShadow: '0 0 8px var(--glow-magenta)', transition: 'opacity 0.15s' }}
+      />
+    </div>
+  )
+}
+
+/* ─── Control icon button ─────────────────────────────────────────── */
+function CtrlIcon({ onClick, label, children }) {
   return (
     <button
       onClick={onClick}
       title={label}
-      className="w-8 h-8 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 transition-opacity"
-      style={{ color: 'var(--color-text)' }}
+      aria-label={label}
+      className="flex items-center justify-center rounded-full flex-shrink-0"
+      style={{ width: 36, height: 36, color: 'var(--color-text)', opacity: 0.85, cursor: 'pointer', transition: 'color 0.15s, opacity 0.15s' }}
+      onMouseEnter={e => { e.currentTarget.style.color = 'var(--neon-cyan)'; e.currentTarget.style.opacity = '1' }}
+      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.opacity = '0.85' }}
     >
       {children}
     </button>
   )
 }
 
-function PlayIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.5l9 4.5-9 4.5V3.5z" /></svg>
-}
-function PauseIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3h2v10H5V3zm4 0h2v10H9V3z" /></svg>
-}
-function PrevIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3V3zm2 5l8-5v10L5 8z" /></svg>
-}
-function NextIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11 3h2v10h-2V3zm-2 5L1 3v10l8-5z" /></svg>
-}
-function VolumeIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5zM11 5a4 4 0 010 6M13 3a7 7 0 010 10" stroke="currentColor" strokeWidth="1" fill="none" /><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /></svg>
-}
-function MuteIcon() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><line x1="11" y1="6" x2="15" y2="10" stroke="currentColor" strokeWidth="1.5" /><line x1="15" y1="6" x2="11" y2="10" stroke="currentColor" strokeWidth="1.5" /></svg>
-}
-function GramIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16">
-      <circle cx="8" cy="10" r="5" fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle cx="8" cy="10" r="2" fill="none" stroke="currentColor" strokeWidth="0.8" />
-      <circle cx="8" cy="10" r="0.8" fill="currentColor" />
-      <path d="M8 5 C10 3 14 2 14 2" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round" />
-    </svg>
-  )
-}
+function PrevIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h2v10H4V3zm2 5l7-5v10L6 8z" /></svg> }
+function NextIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M10 3h2v10h-2V3zm-2 5L1 3v10l7-5z" /></svg> }
+function VolumeIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><path d="M11 5a4 4 0 010 6M13 3a7 7 0 010 10" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" /></svg> }
+function MuteIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><line x1="11" y1="6" x2="15" y2="10" stroke="currentColor" strokeWidth="1.5" /><line x1="15" y1="6" x2="11" y2="10" stroke="currentColor" strokeWidth="1.5" /></svg> }
+function ExpandIcon() { return <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10l4-4 4 4" /></svg> }

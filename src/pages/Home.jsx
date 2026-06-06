@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { HeroDeck } from '../components/vinyl/HeroDeck'
-import { FeaturedCarousel } from '../components/library/FeaturedCarousel'
+import { TrackList } from '../components/library/TrackList'
 import { usePlayerStore } from '../store/playerStore'
 import { tracks } from '../data/tracks'
 
@@ -29,7 +29,8 @@ const PARTICLES = [
 ]
 
 export default function Home() {
-  const { loadTrack, setQueue } = usePlayerStore()
+  const { loadTrack, setQueue, currentTrack } = usePlayerStore()
+  const heroTrack = currentTrack || tracks[0]
 
   function handlePlay() {
     setQueue(tracks)
@@ -41,16 +42,38 @@ export default function Home() {
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section
-        className="noise-overlay relative flex flex-col items-center justify-center text-center px-6 pb-20"
+        className="noise-overlay relative flex flex-col items-center justify-center text-center px-6 pb-20 overflow-hidden"
         style={{ minHeight: '100vh', paddingTop: 80 }}
       >
+        {/* Focused-track cover as a smooth ambient background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+          <AnimatePresence>
+            <motion.div
+              key={heroTrack?.id || 'none'}
+              initial={{ opacity: 0, scale: 1.06 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute', inset: -100,
+                backgroundImage: heroTrack?.coverArt ? `url("${heroTrack.coverArt}")` : 'none',
+                backgroundSize: 'cover', backgroundPosition: 'center',
+                filter: 'blur(26px) saturate(1.15) brightness(0.95)',
+              }}
+            />
+          </AnimatePresence>
+          {/* Light scrim — keeps the title/controls legible without hiding the cover */}
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 95% 85% at 50% 44%, color-mix(in srgb, var(--bg) 2%, transparent) 0%, color-mix(in srgb, var(--bg) 28%, transparent) 58%, color-mix(in srgb, var(--bg) 80%, transparent) 100%)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 180, background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg) 55%, transparent) 0%, transparent 100%)' }} />
+        </div>
+
         {/* Deep ambient glow behind gramophone */}
         <div
           className="absolute pointer-events-none"
           style={{
             top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
             width: 600, height: 600,
-            background: 'radial-gradient(circle, rgba(255,47,208,0.09) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 70%)',
             borderRadius: '50%',
           }}
         />
@@ -63,7 +86,7 @@ export default function Home() {
             style={{
               width: p.size, height: p.size,
               left: p.left, top: p.top,
-              border: '1px solid rgba(0,229,255,0.2)',
+              border: '1px solid color-mix(in srgb, var(--accent-2) 20%, transparent)',
             }}
             animate={{
               y:       [-18, 18, -18],
@@ -90,7 +113,7 @@ export default function Home() {
               fontWeight:  900,
               fontSize:    'clamp(52px, 9vw, 120px)',
               color:       'var(--color-text)',
-              textShadow:  '0 0 80px rgba(255,47,208,0.3), 0 0 40px rgba(0,229,255,0.18), 0 2px 40px rgba(0,0,0,0.8)',
+              textShadow:  '0 0 80px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 40px color-mix(in srgb, var(--accent-2) 18%, transparent), 0 2px 40px rgba(0,0,0,0.8)',
               lineHeight:  1.05,
               letterSpacing: '-0.02em',
             }}
@@ -124,7 +147,7 @@ export default function Home() {
               className="absolute pointer-events-none"
               style={{
                 width: 480, height: 320,
-                background: 'radial-gradient(ellipse 55% 45% at 50% 55%, rgba(0,229,255,0.12) 0%, transparent 75%)',
+                background: 'radial-gradient(ellipse 55% 45% at 50% 55%, color-mix(in srgb, var(--accent-2) 12%, transparent) 0%, transparent 75%)',
                 top: '50%', left: '50%',
                 transform: 'translate(-50%, -50%)',
                 borderRadius: '50%',
@@ -139,7 +162,7 @@ export default function Home() {
             onClick={handlePlay}
             className="flex items-center gap-3 px-8 py-3 rounded-full"
             style={{
-              border:      '1px solid rgba(255,47,208,0.5)',
+              border:      '1px solid color-mix(in srgb, var(--accent) 50%, transparent)',
               background:  'transparent',
               color:       'var(--color-accent)',
               fontFamily:  'var(--font-mono)',
@@ -149,7 +172,7 @@ export default function Home() {
               cursor:      'pointer',
               transition:  'background 0.2s, border-color 0.2s',
             }}
-            whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,47,208,0.1)', borderColor: 'rgba(255,47,208,0.85)' }}
+            whileHover={{ scale: 1.05, backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--accent) 85%, transparent)' }}
             whileTap={{ scale: 0.97 }}
           >
             <span
@@ -207,7 +230,7 @@ export default function Home() {
             </span>
           </motion.div>
 
-          <FeaturedCarousel tracks={tracks} allTracks={tracks} />
+          <TrackList tracks={tracks} />
         </div>
       </section>
 
@@ -220,13 +243,13 @@ export default function Home() {
         >
           {/* Divider */}
           <div className="flex items-center gap-6 mb-16 justify-center">
-            <div style={{ width: 60, height: 1, background: 'rgba(0,229,255,0.25)' }} />
+            <div style={{ width: 60, height: 1, background: 'color-mix(in srgb, var(--accent-2) 25%, transparent)' }} />
             <svg width="16" height="16" viewBox="0 0 16 16" opacity="0.4">
-              <circle cx="8" cy="8" r="7" fill="none" stroke="#ff2fd0" strokeWidth="0.8" />
-              <circle cx="8" cy="8" r="4" fill="none" stroke="#ff2fd0" strokeWidth="0.6" />
-              <circle cx="8" cy="8" r="1.5" fill="#ff2fd0" />
+              <circle cx="8" cy="8" r="7" fill="none" stroke="var(--accent)" strokeWidth="0.8" />
+              <circle cx="8" cy="8" r="4" fill="none" stroke="var(--accent)" strokeWidth="0.6" />
+              <circle cx="8" cy="8" r="1.5" fill="var(--accent)" />
             </svg>
-            <div style={{ width: 60, height: 1, background: 'rgba(0,229,255,0.25)' }} />
+            <div style={{ width: 60, height: 1, background: 'color-mix(in srgb, var(--accent-2) 25%, transparent)' }} />
           </div>
 
           <h2
@@ -278,7 +301,7 @@ export default function Home() {
                 style={{
                   background:    'transparent',
                   color:         'var(--color-accent)',
-                  border:        '1px solid rgba(0,229,255,0.4)',
+                  border:        '1px solid color-mix(in srgb, var(--accent-2) 40%, transparent)',
                   fontFamily:    'var(--font-mono)',
                   cursor:        'pointer',
                   textTransform: 'uppercase',

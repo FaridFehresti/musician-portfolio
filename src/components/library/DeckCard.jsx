@@ -2,13 +2,9 @@ import { motion } from 'framer-motion'
 import { usePlayerStore } from '../../store/playerStore'
 import { HoloVinylCard } from '../vinyl/HoloVinylCard'
 
-/* Layout constants consumed by Library grid + FeaturedCarousel.
-   The sleeve is CARD_SIZE; DISK_SPACE reserves room for the disk that
-   slides out to the right so the grid never shifts. */
-export const CARD_SIZE    = 220
-export const DISK_SIZE    = 200
-export const DISK_SPACE   = 108
-export const CARD_TOTAL_W = CARD_SIZE + DISK_SPACE  // 328px
+/* Square holographic card for the Library grid (the spinning disk lives on
+   Now Playing; in a grid it just broke the column spacing). */
+export const CARD_SIZE = 240
 
 export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
   const {
@@ -36,15 +32,16 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ y: -10, zIndex: 20 }}
+      whileHover={{ y: -8, zIndex: 20 }}
       transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-      style={{ width: CARD_TOTAL_W, height: CARD_SIZE, position: 'relative', flexShrink: 0 }}
+      style={{ width: CARD_SIZE, height: CARD_SIZE, position: 'relative' }}
     >
       <HoloVinylCard
         track={track}
         index={index}
         size={CARD_SIZE}
         variant="grid"
+        diskEnabled={false}
         active={isActive}
         playing={isActive && isPlaying}
         paused={isActive && isPaused}

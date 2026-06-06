@@ -21,7 +21,7 @@ export default function Donate() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 40% 30% at 50% 20%, rgba(0,229,255,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 40% 30% at 50% 20%, color-mix(in srgb, var(--accent-2) 6%, transparent) 0%, transparent 70%)',
         }}
       />
 
@@ -63,12 +63,12 @@ export default function Donate() {
                 onClick={() => setSelected(amt)}
                 className="py-5 rounded-2xl flex flex-col items-center gap-1 transition-all"
                 style={{
-                  background: active ? 'rgba(0,229,255,0.12)' : 'var(--color-surface)',
+                  background: active ? 'color-mix(in srgb, var(--accent-2) 12%, transparent)' : 'var(--color-surface)',
                   border: active ? '1.5px solid var(--color-accent)' : '1px solid rgba(240,236,224,0.06)',
                   cursor: 'pointer',
                   color: active ? 'var(--color-accent)' : 'var(--color-muted)',
                   transform: active ? 'scale(1.03)' : 'scale(1)',
-                  boxShadow: active ? '0 0 20px rgba(0,229,255,0.12)' : 'none',
+                  boxShadow: active ? '0 0 20px color-mix(in srgb, var(--accent-2) 12%, transparent)' : 'none',
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -117,14 +117,14 @@ export default function Donate() {
             style={{
               background: 'transparent',
               color: 'var(--color-accent)',
-              border: '1px solid rgba(0,229,255,0.3)',
+              border: '1px solid color-mix(in srgb, var(--accent-2) 30%, transparent)',
               textDecoration: 'none',
               fontFamily: 'var(--font-body)',
               fontSize: 15,
               letterSpacing: '0.04em',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'rgba(0,229,255,0.06)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.background = 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--accent-2) 6%, transparent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent-2) 30%, transparent)'; e.currentTarget.style.background = 'transparent' }}
           >
             PayPal.me
           </a>

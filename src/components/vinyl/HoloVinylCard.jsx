@@ -3,9 +3,9 @@ import Tilt from 'react-parallax-tilt'
 import { GENRE_GRADIENTS } from '../../data/tracks'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useCursorFacing } from '../../hooks/useCursorFacing'
+import { useIsHoverDevice } from '../../hooks/useViewport'
 
-/* ── Sparkle texture: SVG fractal noise punched into sparse bright dots.
-   Sits over the foil in color-dodge, so it picks up the neon hues.      */
+/* ── Sparkle texture: SVG fractal noise punched into sparse bright dots. ── */
 const SPARKLE_SVG =
   `<svg xmlns='http://www.w3.org/2000/svg' width='170' height='170'>` +
   `<filter id='s'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' seed='11' stitchTiles='stitch'/>` +
@@ -13,14 +13,10 @@ const SPARKLE_SVG =
   `<rect width='100%' height='100%' filter='url(#s)'/></svg>`
 const SPARKLE_URL = `url("data:image/svg+xml,${encodeURIComponent(SPARKLE_SVG)}")`
 
-/* Frosted-glass base — a medium pearlescent so the foil reads as colour
-   (a near-white base would blow color-dodge out to plain white). */
-const GLASS_BASE = 'linear-gradient(135deg, #d3ccee 0%, #a8a6d6 44%, #bdb1e0 72%, #d0c9ef 100%)'
-
 const VARIANTS = {
-  grid: { tiltAngle: 12, scale: 1.04, glare: 0.38, radius: 14 },
-  hero: { tiltAngle: 14, scale: 1.0,  glare: 0.42, radius: 14 },
-  big:  { tiltAngle: 10, scale: 1.0,  glare: 0.48, radius: 18 },
+  grid: { tiltAngle: 13, scale: 1.05, radius: 14 },
+  hero: { tiltAngle: 15, scale: 1.0,  radius: 16 },
+  big:  { tiltAngle: 10, scale: 1.0,  radius: 18 },
 }
 
 /* Unified disk slide-out (modelled on NowPlaying, the approved reference).
@@ -50,23 +46,27 @@ export function HoloVinylCard({
 }) {
   const v = VARIANTS[variant] || VARIANTS.grid
   const reduced = usePrefersReducedMotion()
-  const tiltOn = tiltEnabled && !reduced
+  const hoverDevice = useIsHoverDevice()
+  // Tilt / foil / cursor-facing are mouse-only — never on touch or reduced-motion.
+  const tiltOn = tiltEnabled && !reduced && hoverDevice
   const [hovered, setHovered] = useState(false)
 
   const stageRef = useRef(null)
   const rafRef = useRef(0)
   const pending = useRef(null)
 
-  /* Idle cards gently face the global cursor; disabled while hovered (the
-     local hover-tilt takes over) and when tilt is off. */
+  /* Idle cards gently face the global cursor; disabled while hovered. */
   const facingRef = useCursorFacing(tiltOn && !hovered, variant === 'big' ? 6 : 9)
 
   const gradColors = GENRE_GRADIENTS[track?.genre] || ['#1a0a33', '#08041a']
   const disk = Math.round(size * 0.92)
   const radius = v.radius
-  const frame = Math.max(7, Math.round(size * 0.045))
+  const frame = Math.max(6, Math.round(size * 0.03))
   const artRadius = Math.max(4, radius - Math.round(frame * 0.5))
-  const foilOn = (hovered || active) && !reduced
+  /* Holo glass only on cards that actually track the pointer — a non-tilt
+     card (e.g. a fanned-back deck card) would just show a static washed
+     glow, which looks broken. */
+  const foilOn = tiltOn && (hovered || active)
   const cardClick = onClick || onPlay
 
   /* Pointer → CSS vars on the stage; rAF-throttled to one write per frame. */
@@ -118,36 +118,36 @@ export function HoloVinylCard({
         />
       )}
 
-      {/* Glass tile — frosted base + inset art + foil + sheen (all clipped) */}
+      {/* Card tile — clean dark-framed cover at rest; holographic glass on hover */}
       <div
         className="holo-sleeve"
         style={{
           position: 'absolute', top: 0, left: 0, width: size, height: size,
           borderRadius: radius, overflow: 'hidden', zIndex: 1,
-          background: GLASS_BASE,
+          background: 'linear-gradient(135deg, var(--card-1) 0%, var(--card-2) 100%)',
           boxShadow: active
-            ? '0 0 0 1.5px var(--neon-magenta), 0 18px 50px rgba(0,0,0,0.85), 0 0 34px var(--glow-magenta), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 0 14px rgba(255,255,255,0.28)'
-            : '0 0 0 1px rgba(255,255,255,0.35), 0 14px 40px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 0 12px rgba(255,255,255,0.22)',
+            ? '0 0 0 1.5px var(--neon-magenta), 0 12px 34px rgba(0,0,0,0.55), 0 0 24px var(--glow-magenta), inset 0 0 0 1px rgba(255,255,255,0.06)'
+            : '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07), inset 0 0 0 1px rgba(255,255,255,0.05)',
         }}
       >
-        {/* Cover art, inset to leave a luminous frosted frame */}
-        <div style={{ position: 'absolute', inset: frame, borderRadius: artRadius, overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.35)' }}>
+        {/* Cover art, inset to leave a slim frame */}
+        <div style={{ position: 'absolute', inset: frame, borderRadius: artRadius, overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.4)' }}>
           {track?.coverArt
             ? <img src={track.coverArt} alt={track.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             : <GradientCover gradColors={gradColors} genre={track?.genre} />}
         </div>
 
-        {/* Foil stack — spans the whole tile (frame + art); mounted on hover/active */}
+        {/* Holographic glass — only on hover/active. Light tracks the pointer
+            so the foil ignites where the 3D light hits the surface. */}
         {foilOn && (
           <>
+            <div className="holo-foil-layer holo-light-spot" />
             <div className="holo-foil-layer holo-foil-color" />
             <div className="holo-foil-layer holo-foil-glint" />
             <div className="holo-foil-layer holo-foil-sparkle" style={{ backgroundImage: SPARKLE_URL }} />
+            <div className="holo-foil-layer holo-spec" />
           </>
         )}
-
-        {/* Glass sheen — always on, brighter as the card tilts */}
-        <div className="holo-glass-sheen" />
 
         {/* Progress */}
         {active && progress > 0 && (
@@ -161,13 +161,13 @@ export function HoloVinylCard({
         )}
 
         {variant === 'grid' && (
-          <div style={{ position: 'absolute', top: frame + 4, left: frame + 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 3px rgba(0,0,0,0.6)', zIndex: 5, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: frame + 4, left: frame + 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 3px rgba(0,0,0,0.7)', zIndex: 5, pointerEvents: 'none' }}>
             {String(index + 1).padStart(2, '0')}
           </div>
         )}
 
         {/* Slot shadow on the right edge — disk emerges from here */}
-        <div style={{ position: 'absolute', top: 0, right: 0, width: 14, bottom: 0, background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.45))', zIndex: 3, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 14, bottom: 0, background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.4))', zIndex: 3, pointerEvents: 'none' }} />
 
         {showPlayButton && (
           <PlayButton visible={hovered || active} playing={playing} onClick={e => { e.stopPropagation(); onPlay?.() }} />
@@ -187,11 +187,7 @@ export function HoloVinylCard({
       perspective={900}
       scale={v.scale}
       transitionSpeed={900}
-      glareEnable
-      glareMaxOpacity={v.glare}
-      glareColor="#ffffff"
-      glarePosition="all"
-      glareBorderRadius={`${radius}px`}
+      glareEnable={false}
       gyroscope={false}
       onMove={onMove}
       onEnter={() => setHovered(true)}
@@ -248,8 +244,8 @@ function DiskLayer({ size, coverArt, gradColors, left, spinning, active, glowStr
           width: size, height: size, borderRadius: '50%',
           background: 'radial-gradient(circle at 50% 50%, #2a2a2a 0%, #0c0c0c 60%, #050505 100%)',
           boxShadow: [
-            active ? '6px 0 34px rgba(0,0,0,0.9)' : '3px 0 16px rgba(0,0,0,0.8)',
-            '0 0 0 1px rgba(0,229,255,0.18)',
+            active ? '5px 0 26px rgba(0,0,0,0.8)' : '3px 0 14px rgba(0,0,0,0.7)',
+            '0 0 0 1px color-mix(in srgb, var(--accent-2) 18%, transparent)',
             glow ? `0 0 ${glow.toFixed(0)}px var(--glow-cyan)` : '',
           ].filter(Boolean).join(', '),
           animation: 'vinyl-spin 1.8s linear infinite',
@@ -261,7 +257,7 @@ function DiskLayer({ size, coverArt, gradColors, left, spinning, active, glowStr
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: 'absolute', inset: 0 }}>
           {grooves.map(({ r, i }) => (
             <circle key={r} cx={size / 2} cy={size / 2} r={r} fill="none"
-              stroke={i % 2 ? 'rgba(255,255,255,0.03)' : 'rgba(0,229,255,0.08)'} strokeWidth="0.7" />
+              stroke={i % 2 ? 'rgba(255,255,255,0.03)' : 'color-mix(in srgb, var(--accent-2) 8%, transparent)'} strokeWidth="0.7" />
           ))}
         </svg>
 
@@ -270,7 +266,7 @@ function DiskLayer({ size, coverArt, gradColors, left, spinning, active, glowStr
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
           width: labelSize, height: labelSize, borderRadius: '50%', overflow: 'hidden',
-          boxShadow: '0 0 0 2px rgba(255,47,208,0.4)',
+          boxShadow: '0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent)',
         }}>
           {coverArt
             ? <img src={coverArt} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -280,7 +276,7 @@ function DiskLayer({ size, coverArt, gradColors, left, spinning, active, glowStr
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
           width: spindle, height: spindle, borderRadius: '50%', background: '#000',
-          boxShadow: '0 0 0 1.5px rgba(0,229,255,0.6)', zIndex: 5,
+          boxShadow: '0 0 0 1.5px color-mix(in srgb, var(--accent-2) 60%, transparent)', zIndex: 5,
         }} />
       </div>
     </div>
@@ -301,7 +297,7 @@ function GradientCover({ gradColors, genre }) {
             fill="none" stroke="var(--neon-cyan)" strokeWidth="1.4" strokeLinecap="round" />
         ))}
       </svg>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(0,229,255,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'color-mix(in srgb, var(--accent-2) 50%, transparent)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
         {genre || 'Select a track'}
       </span>
     </div>
@@ -342,7 +338,7 @@ function PlayButton({ visible, playing, onClick }) {
       style={{
         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)',
         width: 52, height: 52, borderRadius: '50%',
-        background: playing ? 'rgba(255,47,208,0.95)' : 'rgba(11,6,18,0.72)',
+        background: playing ? 'color-mix(in srgb, var(--accent) 95%, transparent)' : 'color-mix(in srgb, var(--card-2) 80%, transparent)',
         border: '2px solid var(--neon-magenta)',
         boxShadow: '0 0 18px var(--glow-magenta)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -352,8 +348,8 @@ function PlayButton({ visible, playing, onClick }) {
       }}
     >
       {playing
-        ? <svg width="14" height="16" viewBox="0 0 14 16" fill="#0b0612"><path d="M0 0h4v16H0zM9 0h4v16H9z" /></svg>
-        : <svg width="14" height="16" viewBox="0 0 14 16" fill="#ff2fd0" style={{ marginLeft: 2 }}><path d="M0 0l13 8L0 16z" /></svg>}
+        ? <svg width="14" height="16" viewBox="0 0 14 16" fill="var(--on-accent)"><path d="M0 0h4v16H0zM9 0h4v16H9z" /></svg>
+        : <svg width="14" height="16" viewBox="0 0 14 16" fill="var(--accent)" style={{ marginLeft: 2 }}><path d="M0 0l13 8L0 16z" /></svg>}
     </button>
   )
 }
@@ -372,7 +368,7 @@ function ZoomHint() {
   return (
     <div style={{
       position: 'absolute', top: 16, left: 16, width: 30, height: 30, borderRadius: '50%',
-      background: 'rgba(11,6,18,0.55)', border: '1px solid rgba(0,229,255,0.4)',
+      background: 'color-mix(in srgb, var(--card-2) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-2) 40%, transparent)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       backdropFilter: 'blur(4px)', zIndex: 6, pointerEvents: 'none', color: 'var(--neon-cyan)',
     }}>

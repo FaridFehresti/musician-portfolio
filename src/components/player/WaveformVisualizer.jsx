@@ -2,6 +2,14 @@ import { useRef, useEffect } from 'react'
 import { usePlayerStore } from '../../store/playerStore'
 import { useAudioAnalyser } from '../../hooks/useAudioAnalyser'
 
+/* "#rrggbb" → "r,g,b" so the canvas gradient can follow the active theme. */
+function hexToRgb(hex) {
+  const h = (hex || '').trim().replace('#', '')
+  if (h.length === 3) return `${parseInt(h[0] + h[0], 16)},${parseInt(h[1] + h[1], 16)},${parseInt(h[2] + h[2], 16)}`
+  if (h.length >= 6) return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
+  return null
+}
+
 export function WaveformVisualizer() {
   const { howl, isPlaying } = usePlayerStore()
   const { frequencyData } = useAudioAnalyser(howl)
@@ -13,6 +21,10 @@ export function WaveformVisualizer() {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+
+    const cs = getComputedStyle(document.documentElement)
+    const c1 = hexToRgb(cs.getPropertyValue('--accent-2')) || '0,229,255'
+    const c2 = hexToRgb(cs.getPropertyValue('--accent')) || '255,47,208'
 
     function draw() {
       rafRef.current = requestAnimationFrame(draw)
@@ -38,8 +50,8 @@ export function WaveformVisualizer() {
         const alpha = 0.9 - distFromCentre * 0.6
 
         const grad = ctx.createLinearGradient(0, H - barH, 0, H)
-        grad.addColorStop(0, `rgba(0,229,255,${alpha})`)
-        grad.addColorStop(1, `rgba(255,47,208,${alpha * 0.6})`)
+        grad.addColorStop(0, `rgba(${c1},${alpha})`)
+        grad.addColorStop(1, `rgba(${c2},${alpha * 0.6})`)
 
         ctx.fillStyle = grad
         const x = i * (barW + 1)

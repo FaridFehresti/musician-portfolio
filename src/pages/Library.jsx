@@ -1,10 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { DeckCard, CARD_TOTAL_W } from '../components/library/DeckCard'
+import { DeckCard, CARD_SIZE } from '../components/library/DeckCard'
 import { tracks, GENRES } from '../data/tracks'
-
-/* Deterministic tilt so cards look like a scattered deck */
-const TILTS = tracks.map((_, i) => ((i * 137 + 17) % 9) - 4)  // range –4° to +4°
 
 export default function Library() {
   const [activeGenre, setActiveGenre] = useState('All')
@@ -32,7 +29,7 @@ export default function Library() {
       className="min-h-screen px-4 sm:px-10 pb-36"
       style={{ background: 'var(--color-bg)', paddingTop: 100 }}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
 
         {/* ── Heading ──────────────────────────────────────────────── */}
         <motion.div
@@ -152,23 +149,20 @@ export default function Library() {
               key={`${activeGenre}-${search}-${sort}`}
               style={{
                 display:               'grid',
-                gridTemplateColumns:   `repeat(auto-fill, minmax(${CARD_TOTAL_W}px, 1fr))`,
-                gap:                   '28px 20px',
+                gridTemplateColumns:   `repeat(auto-fill, minmax(${CARD_SIZE}px, 1fr))`,
+                gap:                   24,
+                justifyItems:          'center',
                 paddingBottom:         40,
               }}
             >
-              {filtered.map((track, i) => {
-                const origIdx = tracks.indexOf(track)
-                return (
-                  <DeckCard
-                    key={track.id}
-                    track={track}
-                    index={i}
-                    allTracks={filtered}
-                    tilt={TILTS[origIdx] ?? 0}
-                  />
-                )
-              })}
+              {filtered.map((track, i) => (
+                <DeckCard
+                  key={track.id}
+                  track={track}
+                  index={i}
+                  allTracks={filtered}
+                />
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
