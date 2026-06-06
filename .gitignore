@@ -12,13 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Audio media — 1.5GB, served via CDN/LFS, not committed (cover images are kept)
-public/music/**/*.mp3
-public/music/**/*.wav
-public/music/**/*.flac
-public/music/**/*.m4a
-public/music/**/*.aac
-public/music/**/*.ogg
+
 
 # Editor directories and files
 .vscode/*
