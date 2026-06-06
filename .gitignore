@@ -1,0 +1,32 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Audio media — 1.5GB, served via CDN/LFS, not committed (cover images are kept)
+public/music/**/*.mp3
+public/music/**/*.wav
+public/music/**/*.flac
+public/music/**/*.m4a
+public/music/**/*.aac
+public/music/**/*.ogg
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

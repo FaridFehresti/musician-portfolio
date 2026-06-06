@@ -1,0 +1,231 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ── Synthwave neon palette ──────────────────────────────────────
+     Token names are unchanged so every existing var(--color-*) ref
+     re-themes for free; only the values flipped gold → neon. */
+  --color-bg: #0b0612;          /* deep violet-black */
+  --color-surface: #140a22;
+  --color-surface-2: #1d0f33;
+  --color-accent: #ff2fd0;      /* neon magenta (was gold) */
+  --color-accent-warm: #00e5ff; /* neon cyan (alias used around the app) */
+  --color-text: #f3e9ff;        /* near-white, violet tint */
+  --color-muted: #8b7da6;
+
+  /* Raw neon helpers */
+  --neon-cyan: #00e5ff;
+  --neon-magenta: #ff2fd0;
+  --neon-violet: #7a4dff;
+  --glow-cyan: rgba(0, 229, 255, 0.45);
+  --glow-magenta: rgba(255, 47, 208, 0.45);
+
+  /* Holographic foil colour stops */
+  --foil-1: #00e5ff;
+  --foil-2: #7a4dff;
+  --foil-3: #ff2fd0;
+
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  /* vinyl cursor */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%230b0612' stroke='%2300e5ff' stroke-width='1'/%3E%3Ccircle cx='12' cy='12' r='7' fill='none' stroke='%2300e5ff' stroke-width='0.5'/%3E%3Ccircle cx='12' cy='12' r='4' fill='none' stroke='%2300e5ff' stroke-width='0.5'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%23ff2fd0'/%3E%3C/svg%3E") 12 12, auto;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-warm);
+}
+
+/* Vinyl spin keyframe */
+@keyframes vinyl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Playing-indicator pulse (was referenced inline but never defined) */
+@keyframes pulse {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.82); }
+}
+
+/* ── Holographic foil (Dota 2 / Pokémon-style) ──────────────────────
+   Layers live inside .holo-sleeve (clipped to its radius). Pointer
+   position is written to CSS vars on .holo-stage by HoloVinylCard;
+   custom props inherit down into these layers. */
+.holo-stage {
+  --mx: 50;    /* pointer x, 0–100 (%) */
+  --my: 50;    /* pointer y, 0–100 (%) */
+  --posx: 50;  /* foil gradient scroll x */
+  --posy: 50;  /* foil gradient scroll y */
+  --hyp: 0;    /* 0–1 distance from centre → sparkle/foil "ignition" */
+  --holo: 1;   /* per-card intensity multiplier */
+}
+
+.holo-foil-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+/* 1 — colour-shift foil: neon rainbow that sweeps with the pointer */
+.holo-foil-color {
+  mix-blend-mode: color-dodge;
+  background-image: repeating-linear-gradient(
+    115deg,
+    var(--foil-1) 0%, var(--foil-2) 8%, var(--foil-3) 16%,
+    var(--foil-1) 24%, var(--foil-2) 32%, var(--foil-3) 40%
+  );
+  background-size: 280% 280%;
+  background-position: calc(var(--posx) * 1%) calc(var(--posy) * 1%);
+  opacity: calc(0.7 * var(--holo) * (0.5 + 0.5 * var(--hyp)));
+}
+
+/* 2 — glints: steep white interference bands (the holographic "lines") */
+.holo-foil-glint {
+  mix-blend-mode: overlay;
+  background-image: repeating-linear-gradient(
+    -48deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.85) 5%,
+    rgba(255, 255, 255, 0) 11%
+  );
+  background-size: 220% 220%;
+  background-position: calc(var(--posy) * -1.2%) calc(var(--posx) * 1.2%);
+  opacity: calc(0.65 * var(--holo) * (0.4 + 0.6 * var(--hyp)));
+}
+
+/* 3 — sparkle: SVG noise punched into bright dots; parallaxes with pointer.
+   background-image (the data-URI) is set inline by the component. */
+.holo-foil-sparkle {
+  mix-blend-mode: color-dodge;
+  background-size: 170px 170px;
+  background-position: calc(var(--mx) * 1.4px) calc(var(--my) * 1.4px);
+  opacity: calc(0.8 * var(--holo) * (0.2 + 0.8 * var(--hyp)));
+}
+
+/* Glass sheen — bright reflective streak; always on, intensifies on tilt */
+.holo-glass-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background-image: linear-gradient(
+    105deg,
+    transparent 26%,
+    rgba(255, 255, 255, 0.5) 47%,
+    rgba(255, 255, 255, 0.08) 56%,
+    transparent 72%
+  );
+  background-size: 220% 220%;
+  background-position: calc(var(--posx) * 1%) calc(var(--posy) * 1%);
+  opacity: calc(0.4 + 0.5 * var(--hyp));
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo-foil-layer { transition: none !important; }
+  .holo-foil-sparkle { display: none !important; }
+  .holo-glass-sheen { transition: none !important; }
+}
+
+/* Touch devices can't hover; skip the heaviest blended layer */
+@media (pointer: coarse) {
+  .holo-foil-sparkle { display: none; }
+}
+
+/* Noise texture overlay (applied via pseudoelement on hero) */
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* Gramophone 3D transitions */
+.gram-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Range input styling */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--color-surface-2);
+  border-radius: 2px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  margin-top: -4.5px;
+  transition: transform 0.15s ease;
+}
+
+input[type='range']:hover::-webkit-slider-thumb {
+  transform: scale(1.3);
+}
+
+input[type='range']::-moz-range-track {
+  height: 3px;
+  background: var(--color-surface-2);
+  border-radius: 2px;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: none;
+}
