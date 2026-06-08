@@ -51,7 +51,7 @@ export function CardTable({ tracks }) {
         pointerEvents: shuffling ? 'none' : 'auto',
       }}>
         <motion.div
-          variants={reveal} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
+          variants={reveal} initial="hidden" animate="visible"
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isDesktop ? 'clamp(24px, 4vw, 48px)' : 16 }}
         >
           <DeckToolbar onShuffle={() => setShuffling(true)} />
