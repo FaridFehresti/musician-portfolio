@@ -32,7 +32,7 @@ export function BrandingSection({ site, onSaved }) {
       {draft.logoUrl && (
         <Field label={`Logo height — ${draft.logoHeight || 90}px`}>
           <input
-            type="range" min={40} max={200} step={2}
+            type="range" min={40} max={600} step={5}
             value={draft.logoHeight || 90}
             onChange={e => set({ logoHeight: Number(e.target.value) })}
             style={{ width: '100%', accentColor: 'var(--color-accent)' }}

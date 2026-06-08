@@ -126,7 +126,7 @@ export default function Home() {
                 height: `clamp(48px, ${(site.logoHeight || 90) / 9}vw, ${site.logoHeight || 90}px)`,
                 width: 'auto',
                 maxHeight: `${site.logoHeight || 90}px`,
-                maxWidth: 'min(78vw, 320px)',
+                maxWidth: 'min(92vw, 760px)',
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 30%, transparent)) drop-shadow(0 2px 30px rgba(0,0,0,0.7))',
               }}
