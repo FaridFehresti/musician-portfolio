@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { DeckCard, CARD_SIZE } from '../components/library/DeckCard'
+import { DeckCard, CARD_W } from '../components/library/DeckCard'
 import { tracks, GENRES } from '../data/tracks'
 
 export default function Library() {
@@ -149,8 +149,9 @@ export default function Library() {
               key={`${activeGenre}-${search}-${sort}`}
               style={{
                 display:               'grid',
-                gridTemplateColumns:   `repeat(auto-fill, minmax(${CARD_SIZE}px, 1fr))`,
-                gap:                   24,
+                gridTemplateColumns:   `repeat(auto-fill, minmax(${CARD_W}px, 1fr))`,
+                columnGap:             24,
+                rowGap:                40,
                 justifyItems:          'center',
                 paddingBottom:         40,
               }}

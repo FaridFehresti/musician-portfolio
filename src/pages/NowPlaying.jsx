@@ -2,20 +2,19 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../store/playerStore'
 import { useAudioAnalyser } from '../hooks/useAudioAnalyser'
-import { WaveformVisualizer } from '../components/player/WaveformVisualizer'
 import { CoverLightbox } from '../components/ui/CoverLightbox'
 import { HoloVinylCard } from '../components/vinyl/HoloVinylCard'
+import { DeckCard, CARD_W, CARD_H } from '../components/library/DeckCard'
 import { useBreakpoint } from '../hooks/useViewport'
-import { fmtDuration } from '../data/tracks'
+import { fmtDuration, tracks } from '../data/tracks'
 
 export default function NowPlaying() {
   const bp = useBreakpoint()
-  const SLEEVE = bp === 'mobile' ? 230 : bp === 'tablet' ? 300 : 340
+  const SLEEVE = bp === 'mobile' ? 200 : bp === 'tablet' ? 300 : 340
   const {
     currentTrack, isPlaying, isPaused,
     currentTime, duration, howl, volume,
     play, pause, next, prev, seek, setVolume,
-    queue, queueIndex, loadTrack,
   } = usePlayerStore()
 
   const { averageBass } = useAudioAnalyser(howl)
@@ -77,7 +76,8 @@ export default function NowPlaying() {
           <HoloVinylCard
             variant="big"
             size={SLEEVE}
-            diskEnabled={bp !== 'mobile'}
+            diskEnabled
+            diskReach={bp === 'mobile' ? 0.32 : 0.5}
             track={currentTrack}
             active={hasTrack}
             playing={isPlaying}
@@ -206,13 +206,8 @@ export default function NowPlaying() {
           </span>
         </div>
 
-        {/* ── Waveform ──────────────────────────────────────────────── */}
-        <div className="w-full rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', padding: '14px 16px' }}>
-          <WaveformVisualizer />
-        </div>
-
-        {/* ── Queue ─────────────────────────────────────────────────── */}
-        <QueueList queue={queue} queueIndex={queueIndex} loadTrack={loadTrack} />
+        {/* ── Suggestions deck (the music cards) ────────────────────── */}
+        <QueueDeck />
       </div>
 
       {/* Cover lightbox */}
@@ -245,40 +240,147 @@ function CtrlBtn({ onClick, children }) {
   )
 }
 
-/* ─── Queue list ──────────────────────────────────────────────────── */
-function QueueList({ queue, queueIndex, loadTrack }) {
-  const upcoming = queue.slice(queueIndex + 1, queueIndex + 6)
-  if (!upcoming.length) return null
+/* ─── Suggestions deck ────────────────────────────────────────────────
+   Five random library tracks, held like a hand. The set is chosen ONCE
+   when the page mounts and stays put — picking a card plays it without
+   reshuffling. Desktop / tablet: an arced FAN — overlapping, rotated
+   cards; hovering a card nudges it up a little and brings it to the front
+   while it stays collided with the rest. Mobile: a centre-snap swipe
+   carousel (a fan of tall transport cards is unusable on a phone). */
+const SUGGEST_COUNT = 5
+
+/* pick `n` distinct tracks at random, preserving their library index for the
+   card's rank chip. Computed once via useState initialiser, so it's stable. */
+function pickRandom(list, n) {
+  const idxs = list.map((_, i) => i)
+  for (let i = idxs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[idxs[i], idxs[j]] = [idxs[j], idxs[i]]
+  }
+  return idxs.slice(0, Math.min(n, list.length)).map(i => ({ track: list[i], idx: i }))
+}
+
+function QueueDeck() {
+  const bp = useBreakpoint()
+  // stable random suggestions — only ever (re)generated on a fresh mount
+  const [cards] = useState(() => pickRandom(tracks, SUGGEST_COUNT))
+
+  if (!cards.length) return null
+
+  const isMobile = bp === 'mobile'
 
   return (
     <div className="w-full">
-      <p className="mb-3" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-        Up Next
-      </p>
-      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid color-mix(in srgb, var(--accent-2) 14%, transparent)' }}>
-        {upcoming.map((track, i) => (
-          <button
-            key={track.id}
-            onClick={() => loadTrack(track)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
-            style={{
-              borderBottom: i < upcoming.length - 1 ? '1px solid color-mix(in srgb, var(--text) 5%, transparent)' : 'none',
-              background: 'transparent', cursor: 'pointer',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 6%, transparent)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-          >
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', minWidth: 22 }}>
-              {String(queueIndex + 2 + i).padStart(2, '0')}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="truncate" style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--color-text)' }}>{track.title}</p>
-              <p className="truncate" style={{ fontSize: 11, color: 'var(--color-muted)', fontFamily: 'var(--font-mono)' }}>{track.genre}</p>
-            </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)' }}>{fmtDuration(track.duration)}</span>
-          </button>
-        ))}
+      <div className="flex items-baseline justify-between mb-1">
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          Suggestions
+        </p>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', opacity: 0.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          {cards.length} picks · {isMobile ? 'swipe ›' : 'hover · pick ›'}
+        </p>
       </div>
+
+      {isMobile
+        ? <QueueCarousel cards={cards} />
+        : <QueueFan cards={cards} scale={bp === 'tablet' ? 0.58 : 0.66} />}
+    </div>
+  )
+}
+
+/* ═══ Desktop / tablet — a fanned hand of cards ═════════════════════════ */
+const FAN_SPRING = { type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }
+
+function QueueFan({ cards, scale }) {
+  const [hover, setHover] = useState(null)
+  const n = cards.length
+  const mid = (n - 1) / 2
+  const w = CARD_W * scale
+  const h = CARD_H * scale
+
+  // fan geometry — keep the whole hand inside a sensible width and overlap
+  // the cards so only their left edge + cover peeks (classic held-hand look)
+  const stepX  = Math.min(86, Math.max(34, Math.round((560 - w) / Math.max(1, n - 1))))
+  const perDeg = Math.min(8, 42 / n)          // degrees of tilt per card from centre
+  const fanW   = w + stepX * (n - 1)
+  // outer cards sit a touch lower than the centre → gentle upward arc
+  const dropAt = t => Math.abs(t) * Math.abs(t) * (3.2 / scale)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 26 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      style={{ position: 'relative', width: fanW, height: h + 56, margin: '0 auto', marginTop: 6 }}
+      onMouseLeave={() => setHover(null)}
+    >
+      {cards.map(({ track, idx }, i) => {
+        const t = i - mid
+        const isUp = hover === i
+        // The OUTER wrapper owns the fan position AND the hover hit-area, and it
+        // NEVER moves on hover — so the pointer can't slide off it and there's no
+        // enter/leave bounce loop. Only the INNER wrapper eases up a little, like
+        // pulling one card a touch out of a real hand. Stacking order is kept
+        // (zIndex: i), so a lifted card never jumps in front of its neighbours.
+        return (
+          <motion.div
+            key={track.id}
+            onMouseEnter={() => setHover(i)}
+            initial={{ opacity: 0, y: 70 }}
+            animate={{ opacity: 1, x: t * stepX, y: dropAt(t), rotate: t * perDeg }}
+            transition={{ ...FAN_SPRING, delay: hover === null ? 0.05 * i : 0 }}
+            style={{
+              position: 'absolute', top: 40, left: `calc(50% - ${w / 2}px)`,
+              width: w, height: h, transformOrigin: 'bottom center',
+              zIndex: i, cursor: 'pointer',
+            }}
+          >
+            <motion.div
+              animate={{ y: isUp ? -22 : 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                <DeckCard track={track} index={idx} allTracks={tracks} tiltEnabled={false} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )
+      })}
+    </motion.div>
+  )
+}
+
+/* ═══ Mobile — a centre-snap swipe carousel ═════════════════════════════ */
+function QueueCarousel({ cards }) {
+  const scale = 0.9
+  const w = CARD_W * scale
+  const h = CARD_H * scale
+  const half = Math.round(w / 2)
+
+  return (
+    <div
+      className="no-scrollbar"
+      style={{
+        display: 'flex', gap: 18, overflowX: 'auto', overflowY: 'visible',
+        scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+        padding: '16px 0 20px', scrollPaddingInline: '50%',
+      }}
+    >
+      {cards.map(({ track, idx }, i) => (
+        <div
+          key={track.id}
+          style={{
+            flex: '0 0 auto', scrollSnapAlign: 'center', width: w, height: h,
+            marginLeft:  i === 0 ? `max(4px, calc(50% - ${half}px))` : 0,
+            marginRight: i === cards.length - 1 ? `max(4px, calc(50% - ${half}px))` : 0,
+          }}
+        >
+          <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            <DeckCard track={track} index={idx} allTracks={tracks} tiltEnabled={false} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

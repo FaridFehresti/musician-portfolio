@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { HeroDeck } from '../components/vinyl/HeroDeck'
+import { CardTable } from '../components/home/CardTable'
 import { TrackList } from '../components/library/TrackList'
 import { usePlayerStore } from '../store/playerStore'
 import { tracks } from '../data/tracks'
@@ -111,7 +111,7 @@ export default function Home() {
               fontFamily:  'var(--font-display)',
               fontStyle:   'italic',
               fontWeight:  900,
-              fontSize:    'clamp(52px, 9vw, 120px)',
+              fontSize:    'clamp(40px, 6.5vw, 84px)',
               color:       'var(--color-text)',
               textShadow:  '0 0 80px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 40px color-mix(in srgb, var(--accent-2) 18%, transparent), 0 2px 40px rgba(0,0,0,0.8)',
               lineHeight:  1.05,
@@ -136,24 +136,13 @@ export default function Home() {
             Electronic · House · Techno · Ambient
           </motion.p>
 
-          {/* ── Gramophone ───────────────────────────────────────────── */}
+          {/* ── Card table ───────────────────────────────────────────── */}
           <motion.div
             variants={FADE_UP} initial="hidden" animate="visible" custom={0.35}
-            className="relative flex justify-center items-center"
-            style={{ marginTop: 8, marginBottom: 8 }}
+            className="relative flex justify-center items-center w-full"
+            style={{ marginTop: 28, marginBottom: 20 }}
           >
-            {/* Extra spotlight behind gramophone */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                width: 480, height: 320,
-                background: 'radial-gradient(ellipse 55% 45% at 50% 55%, color-mix(in srgb, var(--accent-2) 12%, transparent) 0%, transparent 75%)',
-                top: '50%', left: '50%',
-                transform: 'translate(-50%, -50%)',
-                borderRadius: '50%',
-              }}
-            />
-            <HeroDeck tracks={tracks} />
+            <CardTable tracks={tracks} />
           </motion.div>
 
           {/* Play button */}

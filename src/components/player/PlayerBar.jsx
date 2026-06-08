@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../../store/playerStore'
@@ -13,6 +13,16 @@ export function PlayerBar() {
 
   const [muted, setMuted] = useState(false)
   const [prevVol, setPrevVol] = useState(0.8)
+  const [volOpen, setVolOpen] = useState(false)
+  const volRef = useRef(null)
+
+  useEffect(() => {
+    if (!volOpen) return
+    function onDoc(e) { if (volRef.current && !volRef.current.contains(e.target)) setVolOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('touchstart', onDoc)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('touchstart', onDoc) }
+  }, [volOpen])
 
   function togglePlayPause() { if (isPlaying) pause(); else play() }
   function toggleMute() {
@@ -50,7 +60,7 @@ export function PlayerBar() {
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className="fixed bottom-0 left-0 right-0 z-50"
           style={{
-            height: 76,
+            height: 84,
             background: 'color-mix(in srgb, var(--surface) 94%, transparent)',
             backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
             borderTop: '1px solid color-mix(in srgb, var(--accent-2) 22%, transparent)',
@@ -59,7 +69,7 @@ export function PlayerBar() {
           {/* Full-width seek bar along the top edge */}
           <SeekBar progress={progress} duration={duration} onSeek={seek} />
 
-          <div className="grid items-center h-full px-3 sm:px-5 gap-2" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+          <div className="grid items-center h-full px-3 sm:px-5 gap-2" style={{ gridTemplateColumns: '1fr auto 1fr', paddingTop: 10 }}>
 
             {/* LEFT — cover + title, click anywhere → Now Playing */}
             <button
@@ -120,17 +130,56 @@ export function PlayerBar() {
               </span>
             </div>
 
-            {/* RIGHT — volume + expand (mute always visible; slider on md+) */}
+            {/* RIGHT — volume + expand */}
             <div className="flex items-center gap-2 sm:gap-3" style={{ justifySelf: 'end' }}>
-              <CtrlIcon onClick={toggleMute} label={muted || volume === 0 ? 'Unmute' : 'Mute'}>
-                {muted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
-              </CtrlIcon>
-              <input
-                type="range" min={0} max={1} step={0.02} value={volume}
-                onChange={e => { setVolume(Number(e.target.value)); setMuted(false) }}
-                className="w-20 hidden md:block" aria-label="Volume"
-                style={{ accentColor: 'var(--neon-magenta)' }}
-              />
+              {/* Desktop: inline mute + slider */}
+              <div className="hidden md:flex items-center gap-2">
+                <CtrlIcon onClick={toggleMute} label={muted || volume === 0 ? 'Unmute' : 'Mute'}>
+                  {muted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
+                </CtrlIcon>
+                <input
+                  type="range" min={0} max={1} step={0.02} value={volume}
+                  onChange={e => { setVolume(Number(e.target.value)); setMuted(false) }}
+                  className="w-20" aria-label="Volume"
+                  style={{ accentColor: 'var(--neon-magenta)' }}
+                />
+              </div>
+
+              {/* Mobile: sound icon → slider popover */}
+              <div className="md:hidden" style={{ position: 'relative' }} ref={volRef}>
+                <CtrlIcon onClick={() => setVolOpen(o => !o)} label="Volume">
+                  {volume === 0 ? <MuteIcon /> : <VolumeIcon />}
+                </CtrlIcon>
+                <AnimatePresence>
+                  {volOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute', bottom: 'calc(100% + 12px)', right: 0, width: 188, padding: '12px 14px', borderRadius: 12, zIndex: 60,
+                        background: 'var(--color-surface)', border: '1px solid color-mix(in srgb, var(--text) 14%, transparent)',
+                        boxShadow: '0 -12px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <button onClick={toggleMute} aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)', display: 'flex', flexShrink: 0 }}>
+                          {muted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
+                        </button>
+                        <input
+                          type="range" min={0} max={1} step={0.02} value={volume}
+                          onChange={e => { setVolume(Number(e.target.value)); setMuted(false) }}
+                          className="flex-1" aria-label="Volume"
+                          style={{ accentColor: 'var(--neon-magenta)' }}
+                        />
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', minWidth: 24, textAlign: 'right' }}>{Math.round(volume * 100)}</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <CtrlIcon onClick={openNowPlaying} label="Open Now Playing"><ExpandIcon /></CtrlIcon>
             </div>
           </div>

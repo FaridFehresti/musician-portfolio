@@ -188,6 +188,17 @@ body {
   50%      { opacity: 0.45; transform: scale(0.82); }
 }
 
+/* Now-playing equalizer bars (library cards) */
+@keyframes eq-bar {
+  0%, 100% { height: 30%; }
+  50%      { height: 100%; }
+}
+
+/* Hide scrollbar (mobile card carousel) while keeping scroll/swipe */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+
 /* ── Holographic foil (Dota 2 / Pokémon-style) ──────────────────────
    Layers live inside .holo-sleeve (clipped to its radius). Pointer
    position is written to CSS vars on .holo-stage by HoloVinylCard;
@@ -214,12 +225,12 @@ body {
 .holo-light-spot {
   mix-blend-mode: screen;
   background: radial-gradient(
-    64% 64% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(176, 224, 255, 0.2) 36%,
-    transparent 70%
+    62% 62% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(176, 224, 255, 0.13) 38%,
+    transparent 72%
   );
-  opacity: calc(0.5 + 0.5 * var(--hyp));
+  opacity: calc(0.32 + 0.45 * var(--hyp));
 }
 
 /* 1 — colour-shift foil: neon rainbow that sweeps with the pointer */
@@ -241,12 +252,12 @@ body {
   background-image: repeating-linear-gradient(
     -48deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.85) 5%,
-    rgba(255, 255, 255, 0) 11%
+    rgba(255, 255, 255, 0.4) 6%,
+    rgba(255, 255, 255, 0) 13%
   );
   background-size: 220% 220%;
   background-position: calc(var(--posy) * -1.2%) calc(var(--posx) * 1.2%);
-  opacity: calc(0.6 * var(--holo) * (0.35 + 0.65 * var(--hyp)));
+  opacity: calc(0.4 * var(--holo) * (0.2 + 0.6 * var(--hyp)));
 }
 
 /* 3 — sparkle: SVG noise punched into bright dots; parallaxes with pointer.
@@ -263,12 +274,12 @@ body {
 .holo-spec {
   mix-blend-mode: screen;
   background: radial-gradient(
-    26% 26% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 255, 255, 0.25) 34%,
-    transparent 62%
+    22% 22% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.14) 36%,
+    transparent 64%
   );
-  opacity: calc(0.55 + 0.45 * var(--hyp));
+  opacity: calc(0.3 + 0.4 * var(--hyp));
 }
 
 @media (prefers-reduced-motion: reduce) {

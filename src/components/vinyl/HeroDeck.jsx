@@ -13,9 +13,9 @@ import { HoloVinylCard } from './HoloVinylCard'
  */
 
 const LAYOUT = {
-  desktop: { size: 300, visible: 5, step1: 122, stepN: 112, riffle: 150 },
-  tablet:  { size: 250, visible: 5, step1: 100, stepN: 92,  riffle: 124 },
-  mobile:  { size: 196, visible: 3, step1: 56,  stepN: 0,   riffle: 70 },
+  desktop: { size: 300, visible: 5, step1: 122, stepN: 112, riffle: 150, disk: 0.42 },
+  tablet:  { size: 250, visible: 5, step1: 100, stepN: 92,  riffle: 124, disk: 0.4 },
+  mobile:  { size: 196, visible: 3, step1: 56,  stepN: 0,   riffle: 70,  disk: 0.3 },
 }
 
 function slot(i, L) {
@@ -127,7 +127,8 @@ export function HeroDeck({ tracks }) {
                 track={track}
                 size={L.size}
                 variant="hero"
-                diskEnabled={false}
+                diskEnabled={isTop && !flipping && !riffling && currentTrack?.id === track.id}
+                diskReach={L.disk}
                 tiltEnabled={isTop && !flipping && !riffling}
                 active={currentTrack?.id === track.id}
                 playing={currentTrack?.id === track.id && isPlaying}

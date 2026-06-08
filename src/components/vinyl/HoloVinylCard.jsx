@@ -20,9 +20,10 @@ const VARIANTS = {
 }
 
 /* Unified disk slide-out (modelled on NowPlaying, the approved reference).
-   `visible` = fraction of the disk sticking out past the sleeve's right edge. */
-function diskLeftFor({ size, disk, active, playing }) {
-  const visible = !active ? 0.18 : playing ? 0.55 : 0.40
+   `visible` = fraction of the disk sticking out past the sleeve's right edge.
+   `reach` lets grid/deck cards poke the disk out less than the big player. */
+function diskLeftFor({ size, disk, active, playing, reach = 0.55 }) {
+  const visible = !active ? 0.16 : playing ? reach : reach * 0.72
   return size - disk * (1 - visible)
 }
 
@@ -32,6 +33,7 @@ export function HoloVinylCard({
   size = 220,
   variant = 'grid',
   diskEnabled = true,
+  diskReach = 0.55,
   tiltEnabled = true,
   holoIntensity = 1,
   active = false,
@@ -111,7 +113,7 @@ export function HoloVinylCard({
           size={disk}
           coverArt={track?.coverArt}
           gradColors={gradColors}
-          left={diskLeftFor({ size, disk, active, playing })}
+          left={diskLeftFor({ size, disk, active, playing, reach: diskReach })}
           spinning={playing}
           active={active}
           glowStrength={glowStrength}
