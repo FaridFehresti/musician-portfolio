@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# CMS — secrets, local SQLite database, and uploaded media
+.env
+server/data
+server/uploads
+
 
 
 # Editor directories and files

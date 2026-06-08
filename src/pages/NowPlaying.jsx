@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../store/playerStore'
 import { useAudioAnalyser } from '../hooks/useAudioAnalyser'
@@ -6,7 +6,8 @@ import { CoverLightbox } from '../components/ui/CoverLightbox'
 import { HoloVinylCard } from '../components/vinyl/HoloVinylCard'
 import { DeckCard, CARD_W, CARD_H } from '../components/library/DeckCard'
 import { useBreakpoint } from '../hooks/useViewport'
-import { fmtDuration, tracks } from '../data/tracks'
+import { fmtDuration } from '../data/tracks'
+import { useContentStore } from '../store/contentStore'
 
 export default function NowPlaying() {
   const bp = useBreakpoint()
@@ -15,6 +16,7 @@ export default function NowPlaying() {
     currentTrack, isPlaying, isPaused,
     currentTime, duration, howl, volume,
     play, pause, next, prev, seek, setVolume,
+    shuffle, repeat, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
 
   const { averageBass } = useAudioAnalyser(howl)
@@ -155,7 +157,11 @@ export default function NowPlaying() {
         </div>
 
         {/* ── Controls ──────────────────────────────────────────────── */}
-        <div className="flex items-center justify-center gap-8 w-full">
+        <div className="flex items-center justify-center gap-5 sm:gap-7 w-full">
+          <ModeBtn active={shuffle} onClick={toggleShuffle} title="Shuffle">
+            <ShuffleSvg />
+          </ModeBtn>
+
           <CtrlBtn onClick={prev}>
             <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3V3zm2 5l8-5v10L5 8z" /></svg>
           </CtrlBtn>
@@ -182,27 +188,40 @@ export default function NowPlaying() {
           <CtrlBtn onClick={next}>
             <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M11 3h2v10h-2V3zm-2 5L1 3v10l8-5z" /></svg>
           </CtrlBtn>
+
+          <ModeBtn active={repeat !== 'off'} onClick={cycleRepeat} title={`Repeat: ${repeat}`}>
+            {repeat === 'one' ? <RepeatOneSvg /> : <RepeatSvg />}
+          </ModeBtn>
         </div>
 
         {/* ── Volume ────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 w-full max-w-xs">
+        <div
+          className="w-full"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14, maxWidth: 380,
+            padding: '11px 18px', borderRadius: 999,
+            background: 'color-mix(in srgb, var(--color-surface) 65%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
           <button
             onClick={toggleMute}
             aria-label={volume === 0 ? 'Unmute' : 'Mute'}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', display: 'flex', flexShrink: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: volume === 0 ? 'var(--color-muted)' : 'var(--neon-magenta)', display: 'flex', flexShrink: 0 }}
           >
             {volume === 0
               ? <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><line x1="11" y1="6" x2="15" y2="10" stroke="currentColor" strokeWidth="1.5" /><line x1="15" y1="6" x2="11" y2="10" stroke="currentColor" strokeWidth="1.5" /></svg>
               : <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><path d="M11 5a4 4 0 010 6M13 3a7 7 0 010 10" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" /></svg>}
           </button>
           <input
-            type="range" min={0} max={1} step={0.02} value={volume}
+            type="range" min={0} max={1} step={0.01} value={volume}
             onChange={e => setVolume(Number(e.target.value))}
-            className="flex-1" aria-label="Volume"
-            style={{ accentColor: 'var(--neon-magenta)' }}
+            className="vol-slider" aria-label="Volume"
+            style={{ flex: 1, '--pct': `${Math.round(volume * 100)}%` }}
           />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-muted)', minWidth: 30, textAlign: 'right' }}>
-            {Math.round(volume * 100)}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text)', minWidth: 38, textAlign: 'right' }}>
+            {Math.round(volume * 100)}%
           </span>
         </div>
 
@@ -240,6 +259,43 @@ function CtrlBtn({ onClick, children }) {
   )
 }
 
+/* ─── Shuffle / Repeat mode button — clear on/off state ───────────── */
+function ModeBtn({ active, onClick, title, children }) {
+  return (
+    <motion.button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      aria-pressed={active}
+      whileHover={{ scale: 1.12 }}
+      whileTap={{ scale: 0.9 }}
+      style={{
+        width: 40, height: 40, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: active ? 'var(--neon-magenta)' : 'var(--color-muted)',
+        background: active ? 'color-mix(in srgb, var(--neon-magenta) 16%, transparent)' : 'transparent',
+        border: active ? '1px solid color-mix(in srgb, var(--neon-magenta) 55%, transparent)' : '1px solid transparent',
+        boxShadow: active ? '0 0 14px color-mix(in srgb, var(--neon-magenta) 30%, transparent)' : 'none',
+        transition: 'color 0.15s, background 0.15s, border-color 0.15s',
+      }}
+    >
+      {children}
+    </motion.button>
+  )
+}
+
+const M_STROKE = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+function ShuffleSvg() { return <svg width="17" height="17" viewBox="0 0 24 24" {...M_STROKE}><path d="M16 3h5v5" /><path d="M4 20 21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg> }
+function RepeatSvg() { return <svg width="17" height="17" viewBox="0 0 24 24" {...M_STROKE}><path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg> }
+function RepeatOneSvg() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" {...M_STROKE}>
+      <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+      <text x="12" y="15.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" fontFamily="var(--font-mono)">1</text>
+    </svg>
+  )
+}
+
 /* ─── Suggestions deck ────────────────────────────────────────────────
    Five random library tracks, held like a hand. The set is chosen ONCE
    when the page mounts and stays put — picking a card plays it without
@@ -262,6 +318,8 @@ function pickRandom(list, n) {
 
 function QueueDeck() {
   const bp = useBreakpoint()
+  const allTracks = useContentStore(s => s.tracks)
+  const tracks = useMemo(() => allTracks.filter(t => t.inLibrary !== false), [allTracks])
   // stable random suggestions — only ever (re)generated on a fresh mount
   const [cards] = useState(() => pickRandom(tracks, SUGGEST_COUNT))
 
@@ -281,8 +339,8 @@ function QueueDeck() {
       </div>
 
       {isMobile
-        ? <QueueCarousel cards={cards} />
-        : <QueueFan cards={cards} scale={bp === 'tablet' ? 0.58 : 0.66} />}
+        ? <QueueCarousel cards={cards} allTracks={tracks} />
+        : <QueueFan cards={cards} allTracks={tracks} scale={bp === 'tablet' ? 0.58 : 0.66} />}
     </div>
   )
 }
@@ -290,7 +348,7 @@ function QueueDeck() {
 /* ═══ Desktop / tablet — a fanned hand of cards ═════════════════════════ */
 const FAN_SPRING = { type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }
 
-function QueueFan({ cards, scale }) {
+function QueueFan({ cards, scale, allTracks }) {
   const [hover, setHover] = useState(null)
   const n = cards.length
   const mid = (n - 1) / 2
@@ -341,7 +399,7 @@ function QueueFan({ cards, scale }) {
               style={{ width: '100%', height: '100%' }}
             >
               <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-                <DeckCard track={track} index={idx} allTracks={tracks} tiltEnabled={false} />
+                <DeckCard track={track} index={idx} allTracks={allTracks} tiltEnabled={false} />
               </div>
             </motion.div>
           </motion.div>
@@ -352,7 +410,7 @@ function QueueFan({ cards, scale }) {
 }
 
 /* ═══ Mobile — a centre-snap swipe carousel ═════════════════════════════ */
-function QueueCarousel({ cards }) {
+function QueueCarousel({ cards, allTracks }) {
   const scale = 0.9
   const w = CARD_W * scale
   const h = CARD_H * scale
@@ -377,7 +435,7 @@ function QueueCarousel({ cards }) {
           }}
         >
           <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-            <DeckCard track={track} index={idx} allTracks={tracks} tiltEnabled={false} />
+            <DeckCard track={track} index={idx} allTracks={allTracks} tiltEnabled={false} />
           </div>
         </div>
       ))}

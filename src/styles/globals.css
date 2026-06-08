@@ -351,3 +351,58 @@ input[type='range']::-moz-range-thumb {
   background: var(--color-accent);
   border: none;
 }
+
+/* Volume slider — thicker, with a clearly filled portion. Drive the fill with
+   an inline `--pct` (e.g. style={{'--pct': '80%'}}) so it's visible at a glance. */
+.vol-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  outline: none;
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+}
+.vol-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--neon-magenta) 0%,
+    var(--neon-magenta) var(--pct, 50%),
+    color-mix(in srgb, var(--text) 20%, transparent) var(--pct, 50%),
+    color-mix(in srgb, var(--text) 20%, transparent) 100%
+  );
+}
+.vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--neon-magenta);
+  box-shadow: 0 0 8px var(--glow-magenta);
+  transition: transform 0.15s ease;
+}
+.vol-slider:hover::-webkit-slider-thumb,
+.vol-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
+.vol-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+}
+.vol-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--neon-magenta);
+}
+.vol-slider::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--neon-magenta);
+  box-shadow: 0 0 8px var(--glow-magenta);
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ThemeSwitcher } from './ThemeSwitcher'
+import { useContentStore } from '../../store/contentStore'
 
 const LINKS = [
   ['/library',     'Library'],
@@ -12,6 +12,12 @@ const LINKS = [
 
 export function Nav() {
   const location = useLocation()
+  const site = useContentStore(s => s.site)
+  const tracks = useContentStore(s => s.tracks)
+  const hasVideos = tracks.some(t => t.video)
+  const links = hasVideos
+    ? [['/library', 'Library'], ['/videos', 'Videos'], ['/now-playing', 'Now Playing'], ['/about', 'About'], ['/donate', 'Support']]
+    : LINKS
   const [scrolled, setScrolled] = useState(false)
   const [visible, setVisible]   = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -49,23 +55,24 @@ export function Nav() {
         transition:           'background 0.3s, border-color 0.3s',
       }}
     >
-      {/* Brand */}
+      {/* Brand — always the artist name (the logo lives in the hero only) */}
       <Link
         to="/"
         style={{
+          display: 'flex', alignItems: 'center',
           fontFamily: 'var(--font-display)', fontStyle: 'italic',
           fontSize: 'clamp(15px, 4vw, 20px)', color: 'var(--color-accent)',
           textDecoration: 'none', letterSpacing: '-0.01em', whiteSpace: 'nowrap', flexShrink: 0,
         }}
       >
-        Artist Name
+        {site.artistName || 'Artist Name'}
       </Link>
 
       {/* Right cluster */}
       <div className="flex items-center gap-1 sm:gap-2" ref={menuRef}>
         {/* Desktop links */}
         <nav className="hidden sm:flex items-center gap-1">
-          {LINKS.map(([to, label]) => {
+          {links.map(([to, label]) => {
             const active = location.pathname === to
             return (
               <Link
@@ -89,8 +96,6 @@ export function Nav() {
             )
           })}
         </nav>
-
-        <ThemeSwitcher />
 
         {/* Mobile hamburger */}
         <button
@@ -122,7 +127,7 @@ export function Nav() {
                 boxShadow: '0 18px 46px rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)',
               }}
             >
-              {LINKS.map(([to, label]) => {
+              {links.map(([to, label]) => {
                 const active = location.pathname === to
                 return (
                   <Link

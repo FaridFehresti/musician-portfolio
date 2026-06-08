@@ -17,7 +17,8 @@ import Lenis from 'lenis'
 export function useLenis(enabled, onScroll) {
   const lenisRef = useRef(null)
   const cbRef = useRef(onScroll)
-  cbRef.current = onScroll
+  // keep the latest callback in the ref without touching it during render
+  useEffect(() => { cbRef.current = onScroll }, [onScroll])
 
   useEffect(() => {
     if (!enabled) return

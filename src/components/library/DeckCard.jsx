@@ -1,11 +1,13 @@
-import { useRef, useCallback, useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useRef, useCallback, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import Tilt from 'react-parallax-tilt'
 import { usePlayerStore } from '../../store/playerStore'
 import { GENRE_GRADIENTS, fmtDuration } from '../../data/tracks'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useCursorFacing } from '../../hooks/useCursorFacing'
 import { useIsHoverDevice } from '../../hooks/useViewport'
+import { VideoLightbox } from '../ui/VideoLightbox'
 
 /* ── Sparkle texture: SVG fractal noise punched into sparse bright dots. ── */
 const SPARKLE_SVG =
@@ -41,9 +43,10 @@ const EDGE = [
 
 export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
   const {
-    currentTrack, isPlaying, isPaused, howl,
+    currentTrack, isPlaying, isPaused,
     loadTrack, setQueue, play, pause, next, prev,
     currentTime, duration, seek,
+    shuffle, repeat, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
 
   const isActive = currentTrack?.id === track.id
@@ -56,13 +59,12 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
   const tiltOn      = tiltEnabled && !reduced && hoverDevice
   const [hovered, setHovered] = useState(false)
   const [liked, setLiked]     = useState(false)
-  const [shuffle, setShuffle] = useState(false)
-  const [repeat, setRepeat]   = useState(false)
+  const [videoOpen, setVideoOpen] = useState(false)
 
-  /* Repeat toggles loop on the live audio while this card is the active one. */
-  useEffect(() => {
-    if (isActive && howl) howl.loop(repeat)
-  }, [isActive, howl, repeat])
+  function openVideo() {
+    if (isActive && isPlaying) pause()   // don't play audio under the video
+    setVideoOpen(true)
+  }
 
   const stageRef = useRef(null)
   const rafRef   = useRef(0)
@@ -218,7 +220,10 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
                 {track.artist}
               </p>
             </div>
-            <LikeButton liked={liked} onToggle={() => setLiked(v => !v)} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+              {track?.video && <VideoButton onClick={e => { e.stopPropagation(); openVideo() }} />}
+              <LikeButton liked={liked} onToggle={() => setLiked(v => !v)} />
+            </div>
           </div>
 
           {/* Transport — progress + controls, pinned to the bottom */}
@@ -257,7 +262,7 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
 
             {/* controls: shuffle · prev · play · next · repeat */}
             <div style={{ marginTop: 11, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <MiniCtrl label="Shuffle" active={shuffle} onClick={e => { e.stopPropagation(); setShuffle(v => !v) }}>
+              <MiniCtrl label="Shuffle" active={shuffle} onClick={e => { e.stopPropagation(); toggleShuffle() }}>
                 <ShuffleIcon />
               </MiniCtrl>
               <MiniCtrl label="Previous" onClick={e => { e.stopPropagation(); prev() }}>
@@ -267,8 +272,8 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
               <MiniCtrl label="Next" onClick={e => { e.stopPropagation(); next() }}>
                 <NextIcon />
               </MiniCtrl>
-              <MiniCtrl label="Repeat" active={repeat} onClick={e => { e.stopPropagation(); setRepeat(v => !v) }}>
-                <RepeatIcon />
+              <MiniCtrl label={`Repeat: ${repeat}`} active={repeat !== 'off'} onClick={e => { e.stopPropagation(); cycleRepeat() }}>
+                {repeat === 'one' ? <RepeatOneIcon /> : <RepeatIcon />}
               </MiniCtrl>
             </div>
           </div>
@@ -312,7 +317,39 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
       <div ref={facingRef} style={{ width: CARD_W, height: CARD_H, transition: 'transform 0.22s ease-out' }}>
         {inner}
       </div>
+
+      {/* Video lightbox — portalled to <body> so card transforms don't pin it */}
+      {createPortal(
+        <AnimatePresence>
+          {videoOpen && (
+            <VideoLightbox url={track.video} title={track.title} onClose={() => setVideoOpen(false)} />
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </motion.div>
+  )
+}
+
+/* ─── Video button (title row) — opens the clip ─────────────────────── */
+function VideoButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Watch video"
+      title="Watch video"
+      style={{
+        flexShrink: 0, width: 24, height: 24, borderRadius: '50%', border: 'none',
+        background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--neon-cyan)', transition: 'color 0.18s',
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+        <rect x="0.6" y="3" width="10.5" height="10" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M11.5 6.6l3.9-2.1v7l-3.9-2.1z" />
+        <path d="M3.4 6l3.6 2-3.6 2z" />
+      </svg>
+    </button>
   )
 }
 
@@ -466,6 +503,14 @@ function ShuffleIcon() {
 }
 function RepeatIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" {...STROKE}><path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+}
+function RepeatOneIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" {...STROKE}>
+      <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+      <text x="12" y="15.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" fontFamily="var(--font-mono)">1</text>
+    </svg>
+  )
 }
 function PrevIcon() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h2v10H4V3zm3 5l6-5v10L7 8z" /></svg>

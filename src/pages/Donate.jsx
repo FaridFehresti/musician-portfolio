@@ -1,16 +1,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-
-const TIP_AMOUNTS = ['$3', '$5', '$10']
-
-const WHY_CARDS = [
-  { icon: '🎙', title: 'Better equipment', text: 'Better mics, converters, and monitors mean better music.' },
-  { icon: '🎵', title: 'More music', text: 'Every tip goes directly back into studio time and releases.' },
-  { icon: '∞', title: 'Keep it free', text: 'Your support means the music stays free for everyone, forever.' },
-]
+import { useContentStore } from '../store/contentStore'
 
 export default function Donate() {
-  const [selected, setSelected] = useState('$5')
+  const donation = useContentStore(s => s.donation)
+  const TIP_AMOUNTS = donation.amounts || []
+  const WHY_CARDS = donation.why || []
+  const [selected, setSelected] = useState(() => TIP_AMOUNTS[1] || TIP_AMOUNTS[0] || '')
 
   return (
     <div
@@ -42,10 +38,10 @@ export default function Donate() {
               marginBottom: 16,
             }}
           >
-            Support the Music
+            {donation.heading}
           </h1>
           <p style={{ color: 'var(--color-muted)', fontSize: 15, lineHeight: 1.7 }}>
-            All music is free. If you enjoy it, a small tip keeps the studio running.
+            {donation.subtext}
           </p>
         </motion.div>
 
@@ -89,45 +85,49 @@ export default function Donate() {
           transition={{ delay: 0.25, duration: 0.6 }}
           className="flex flex-col gap-3 mb-16"
         >
-          <a
-            href="https://ko-fi.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-medium transition-all"
-            style={{
-              background: 'var(--color-accent)',
-              color: '#0a0a0a',
-              textDecoration: 'none',
-              fontFamily: 'var(--font-body)',
-              fontSize: 15,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent-warm)'; e.currentTarget.style.transform = 'scale(1.02)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.transform = 'scale(1)' }}
-          >
-            ☕ Buy a Coffee on Ko-fi
-          </a>
+          {donation.kofiUrl && (
+            <a
+              href={donation.kofiUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-medium transition-all"
+              style={{
+                background: 'var(--color-accent)',
+                color: '#0a0a0a',
+                textDecoration: 'none',
+                fontFamily: 'var(--font-body)',
+                fontSize: 15,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent-warm)'; e.currentTarget.style.transform = 'scale(1.02)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.transform = 'scale(1)' }}
+            >
+              {donation.kofiLabel || 'Buy a Coffee on Ko-fi'}
+            </a>
+          )}
 
-          <a
-            href="https://paypal.me"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 py-4 rounded-xl text-sm transition-all"
-            style={{
-              background: 'transparent',
-              color: 'var(--color-accent)',
-              border: '1px solid color-mix(in srgb, var(--accent-2) 30%, transparent)',
-              textDecoration: 'none',
-              fontFamily: 'var(--font-body)',
-              fontSize: 15,
-              letterSpacing: '0.04em',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--accent-2) 6%, transparent)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent-2) 30%, transparent)'; e.currentTarget.style.background = 'transparent' }}
-          >
-            PayPal.me
-          </a>
+          {donation.paypalUrl && (
+            <a
+              href={donation.paypalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-4 rounded-xl text-sm transition-all"
+              style={{
+                background: 'transparent',
+                color: 'var(--color-accent)',
+                border: '1px solid color-mix(in srgb, var(--accent-2) 30%, transparent)',
+                textDecoration: 'none',
+                fontFamily: 'var(--font-body)',
+                fontSize: 15,
+                letterSpacing: '0.04em',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--accent-2) 6%, transparent)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent-2) 30%, transparent)'; e.currentTarget.style.background = 'transparent' }}
+            >
+              {donation.paypalLabel || 'PayPal.me'}
+            </a>
+          )}
         </motion.div>
 
         {/* Why donate */}

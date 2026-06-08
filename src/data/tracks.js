@@ -211,6 +211,8 @@ export const tracks = [
     src:      metal("1-Sweet Home Alabama.mp3"),
     coverArt: "/music/metal/covers/lynyrd-skynyrd-sweet-home-alabama.jpg",
     year:     1974,
+    // Optional music video — YouTube or Vimeo URL. Replace with your own.
+    video:    "https://www.youtube.com/watch?v=ye5BuYf8q4o",
   },
   {
     id:       "eric-clapton-layla",
@@ -235,6 +237,7 @@ export const tracks = [
     src:      metal("13 - Don't Cry (Alternate Lyrics).MP3"),
     coverArt: "/music/metal/covers/guns-n-roses-dont-cry-alt-lyrics.jpg",
     year:     1992,
+    video:    "https://www.youtube.com/watch?v=8SbUC-UaAxE",
   },
   {
     id:       "lamb-of-god-ghost-walking",

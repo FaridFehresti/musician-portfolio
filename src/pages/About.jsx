@@ -1,21 +1,20 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { useContentStore } from '../store/contentStore'
+import { SocialIcon } from '../components/icons/SocialIcons'
 
 const FADE_UP = {
   hidden:  { opacity: 0, y: 20 },
   visible: (d = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] } }),
 }
 
-const GENRE_LABELS = ['Psytrance', 'Electronic', 'Metal', 'Ambient', 'House', 'Melodic']
-
-const SOCIALS = [
-  { label: 'SoundCloud', icon: 'SC', href: 'https://soundcloud.com' },
-  { label: 'Instagram',  icon: 'IG', href: 'https://instagram.com' },
-  { label: 'YouTube',    icon: 'YT', href: 'https://youtube.com' },
-  { label: 'Bandcamp',   icon: 'BC', href: 'https://bandcamp.com' },
-]
-
 export default function About() {
+  const site    = useContentStore(s => s.site)
+  const about   = useContentStore(s => s.about)
+  const socials = useContentStore(s => s.socials)
+  const links   = useContentStore(s => s.links)
+  const GENRE_LABELS = about.genres || []
+
   return (
     <div
       className="min-h-screen"
@@ -33,17 +32,17 @@ export default function About() {
             color: 'var(--color-muted)', letterSpacing: '0.2em',
             textTransform: 'uppercase', marginBottom: 20,
           }}>
-            About the Artist
+            {about.label}
           </p>
           <h1 style={{
             fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 900,
             fontSize: 'clamp(32px, 6vw, 76px)', color: 'var(--color-text)',
             lineHeight: 1.05, marginBottom: 24, letterSpacing: '-0.02em',
           }}>
-            "Music is the space<br />between the notes."
+            “{about.quote}”
           </h1>
           <p style={{ color: 'var(--color-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-            — Artist Name
+            — {site.artistName || 'Artist Name'}
           </p>
         </motion.div>
 
@@ -63,20 +62,26 @@ export default function About() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
             }}>
-              <svg width="55%" height="55%" viewBox="0 0 200 200" opacity="0.11">
-                {[90, 78, 66, 54, 42, 30, 18].map(r => (
-                  <circle key={r} cx="100" cy="100" r={r}
-                    fill="none" stroke="var(--accent)" strokeWidth="0.8" />
-                ))}
-                <circle cx="100" cy="100" r="8" fill="var(--accent)" opacity="0.4" />
-              </svg>
-              <p style={{
-                position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center',
-                fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                fontSize: 13, color: 'color-mix(in srgb, var(--accent-2) 35%, transparent)',
-              }}>
-                Add your photo here
-              </p>
+              {about.portraitUrl ? (
+                <img src={about.portraitUrl} alt={site.artistName || 'Portrait'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <>
+                  <svg width="55%" height="55%" viewBox="0 0 200 200" opacity="0.11">
+                    {[90, 78, 66, 54, 42, 30, 18].map(r => (
+                      <circle key={r} cx="100" cy="100" r={r}
+                        fill="none" stroke="var(--accent)" strokeWidth="0.8" />
+                    ))}
+                    <circle cx="100" cy="100" r="8" fill="var(--accent)" opacity="0.4" />
+                  </svg>
+                  <p style={{
+                    position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center',
+                    fontFamily: 'var(--font-display)', fontStyle: 'italic',
+                    fontSize: 13, color: 'color-mix(in srgb, var(--accent-2) 35%, transparent)',
+                  }}>
+                    Add your photo here
+                  </p>
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -85,24 +90,18 @@ export default function About() {
             variants={FADE_UP} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0.12}
             className="flex flex-col gap-5"
           >
-            <p style={{ color: 'var(--color-text)', fontSize: 16, lineHeight: 1.85, fontFamily: 'var(--font-body)' }}>
-              A music producer and sound explorer pushing boundaries across genres.
-              From pulsing psytrance to heavy metal and hypnotic deep house — every track
-              is a journey through texture, rhythm, and raw energy.
-            </p>
-            <p style={{ color: 'var(--color-muted)', fontSize: 15, lineHeight: 1.85, fontFamily: 'var(--font-body)' }}>
-              Drawing from global influences — tribal rhythms, cinematic landscapes, and
-              the underground — each release is crafted with precision and passion,
-              to move bodies and expand minds.
-            </p>
-            <p style={{ color: 'var(--color-muted)', fontSize: 15, lineHeight: 1.85, fontFamily: 'var(--font-body)' }}>
-              All music here is free. No subscriptions, no gatekeeping.
-              Just sound — available to anyone who wants to listen.
-            </p>
+            {(about.bio || []).map((para, i) => (
+              <p key={i} style={{
+                color: i === 0 ? 'var(--color-text)' : 'var(--color-muted)',
+                fontSize: i === 0 ? 16 : 15, lineHeight: 1.85, fontFamily: 'var(--font-body)',
+              }}>
+                {para}
+              </p>
+            ))}
 
             {/* Socials */}
             <div className="flex flex-wrap gap-3 mt-2">
-              {SOCIALS.map(({ label, icon, href }) => (
+              {socials.map(({ label, icon, href }) => (
                 <a key={label} href={href} target="_blank" rel="noopener noreferrer"
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
@@ -117,17 +116,37 @@ export default function About() {
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.borderColor = 'rgba(240,236,224,0.1)' }}
                 >
                   <span style={{
-                    width: 20, height: 20, borderRadius: '50%',
+                    width: 22, height: 22, borderRadius: '50%',
                     background: 'color-mix(in srgb, var(--accent-2) 12%, transparent)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 700, fontSize: 7, color: 'var(--color-accent)', flexShrink: 0,
+                    color: 'var(--color-accent)', flexShrink: 0,
                   }}>
-                    {icon}
+                    <SocialIcon name={icon} size={13} />
                   </span>
                   {label}
                 </a>
               ))}
             </div>
+
+            {/* Custom links (shop, press kit, …) */}
+            {links.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {links.map(({ label, href }) => (
+                  <a key={label + href} href={href} target="_blank" rel="noopener noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '7px 16px', borderRadius: 20,
+                      border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)',
+                      background: 'transparent', color: 'var(--color-accent)',
+                      fontFamily: 'var(--font-mono)', fontSize: 11,
+                      textDecoration: 'none', letterSpacing: '0.06em',
+                    }}
+                  >
+                    ↗ {label}
+                  </a>
+                ))}
+              </div>
+            )}
           </motion.div>
         </div>
 

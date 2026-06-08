@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { DeckCard, CARD_W } from '../components/library/DeckCard'
-import { tracks, GENRES } from '../data/tracks'
+import { useContentStore } from '../store/contentStore'
 
 export default function Library() {
+  const allTracks = useContentStore(s => s.tracks)
+  const GENRES     = useContentStore(s => s.genres)
   const [activeGenre, setActiveGenre] = useState('All')
   const [search, setSearch]           = useState('')
   const [sort, setSort]               = useState('default')
 
   const filtered = useMemo(() => {
-    let list = [...tracks]
+    let list = allTracks.filter(t => t.inLibrary !== false)
     if (activeGenre !== 'All') list = list.filter(t => t.genre === activeGenre)
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -22,7 +24,7 @@ export default function Library() {
       case 'newest':   list.sort((a, b) => b.year - a.year); break
     }
     return list
-  }, [activeGenre, search, sort])
+  }, [allTracks, activeGenre, search, sort])
 
   return (
     <div

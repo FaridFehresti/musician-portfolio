@@ -1,9 +1,11 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CardTable } from '../components/home/CardTable'
+import { VideosSection } from '../components/home/VideosSection'
 import { TrackList } from '../components/library/TrackList'
 import { usePlayerStore } from '../store/playerStore'
-import { tracks } from '../data/tracks'
+import { useContentStore } from '../store/contentStore'
 
 const FADE_UP = {
   hidden:  { opacity: 0, y: 28 },
@@ -30,6 +32,16 @@ const PARTICLES = [
 
 export default function Home() {
   const { loadTrack, setQueue, currentTrack } = usePlayerStore()
+  const site = useContentStore(s => s.site)
+  const tracks = useContentStore(s => s.tracks)
+  // Derive placement lists with useMemo — selecting a freshly-filtered array
+  // straight from the store would loop useSyncExternalStore.
+  // Home deck = tracks assigned to a slot; CardTable groups them by slot.
+  const heroList = useMemo(() => tracks.filter(t => t.homeSlot), [tracks])
+  const featuredList = useMemo(() => {
+    const picks = tracks.filter(t => t.inFeatured !== false)
+    return picks.length ? picks : tracks
+  }, [tracks])
   const heroTrack = currentTrack || tracks[0]
 
   function handlePlay() {
@@ -104,22 +116,38 @@ export default function Home() {
 
         <div className="relative z-10 flex flex-col items-center gap-3 w-full">
 
-          {/* Artist name */}
-          <motion.h1
-            variants={FADE_UP} initial="hidden" animate="visible" custom={0}
-            style={{
-              fontFamily:  'var(--font-display)',
-              fontStyle:   'italic',
-              fontWeight:  900,
-              fontSize:    'clamp(40px, 6.5vw, 84px)',
-              color:       'var(--color-text)',
-              textShadow:  '0 0 80px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 40px color-mix(in srgb, var(--accent-2) 18%, transparent), 0 2px 40px rgba(0,0,0,0.8)',
-              lineHeight:  1.05,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Artist Name
-          </motion.h1>
+          {/* Artist name — replaced by the uploaded logo when one is set */}
+          {site.logoUrl ? (
+            <motion.img
+              src={site.logoUrl}
+              alt={site.artistName || 'Logo'}
+              variants={FADE_UP} initial="hidden" animate="visible" custom={0}
+              style={{
+                height: `clamp(48px, ${(site.logoHeight || 90) / 9}vw, ${site.logoHeight || 90}px)`,
+                width: 'auto',
+                maxHeight: `${site.logoHeight || 90}px`,
+                maxWidth: 'min(78vw, 320px)',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 30%, transparent)) drop-shadow(0 2px 30px rgba(0,0,0,0.7))',
+              }}
+            />
+          ) : (
+            <motion.h1
+              variants={FADE_UP} initial="hidden" animate="visible" custom={0}
+              style={{
+                fontFamily:  'var(--font-display)',
+                fontStyle:   'italic',
+                fontWeight:  900,
+                fontSize:    'clamp(40px, 6.5vw, 84px)',
+                color:       'var(--color-text)',
+                textShadow:  '0 0 80px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 40px color-mix(in srgb, var(--accent-2) 18%, transparent), 0 2px 40px rgba(0,0,0,0.8)',
+                lineHeight:  1.05,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {site.artistName || 'Artist Name'}
+            </motion.h1>
+          )}
 
           {/* Tagline */}
           <motion.p
@@ -133,7 +161,7 @@ export default function Home() {
               textTransform: 'uppercase',
             }}
           >
-            Electronic · House · Techno · Ambient
+            {site.tagline}
           </motion.p>
 
           {/* ── Card table ───────────────────────────────────────────── */}
@@ -142,7 +170,7 @@ export default function Home() {
             className="relative flex justify-center items-center w-full"
             style={{ marginTop: 28, marginBottom: 20 }}
           >
-            <CardTable tracks={tracks} />
+            <CardTable tracks={heroList} />
           </motion.div>
 
           {/* Play button */}
@@ -215,13 +243,16 @@ export default function Home() {
               Latest Releases
             </h2>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-muted)' }}>
-              — {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
+              — {featuredList.length} {featuredList.length === 1 ? 'track' : 'tracks'}
             </span>
           </motion.div>
 
-          <TrackList tracks={tracks} />
+          <TrackList tracks={featuredList} />
         </div>
       </section>
+
+      {/* ── Videos (shown only when the artist has videos) ───────────── */}
+      <VideosSection tracks={tracks} />
 
       {/* ── CTA ──────────────────────────────────────────────────────── */}
       <section className="px-6 pb-40 text-center">
@@ -231,7 +262,7 @@ export default function Home() {
           className="max-w-2xl mx-auto"
         >
           {/* Divider */}
-          <div className="flex items-center gap-6 mb-16 justify-center">
+          <div className="flex items-center gap-6 mb-10 justify-center">
             <div style={{ width: 60, height: 1, background: 'color-mix(in srgb, var(--accent-2) 25%, transparent)' }} />
             <svg width="16" height="16" viewBox="0 0 16 16" opacity="0.4">
               <circle cx="8" cy="8" r="7" fill="none" stroke="var(--accent)" strokeWidth="0.8" />
@@ -241,26 +272,11 @@ export default function Home() {
             <div style={{ width: 60, height: 1, background: 'color-mix(in srgb, var(--accent-2) 25%, transparent)' }} />
           </div>
 
-          <h2
-            style={{
-              fontFamily:  'var(--font-display)',
-              fontStyle:   'italic',
-              fontWeight:  900,
-              fontSize:    'clamp(40px, 7vw, 88px)',
-              color:       'var(--color-text)',
-              lineHeight:  1.0,
-              marginBottom: 16,
-            }}
-          >
-            {tracks.length} tracks.
-            <br />
-            <span style={{ color: 'var(--color-accent)' }}>All free.</span>
-          </h2>
-
-          <p style={{ color: 'var(--color-muted)', marginBottom: 44, fontSize: 15, lineHeight: 1.7 }}>
-            No subscription. No account required.
-            <br />
-            Just press play — anytime, anywhere.
+          <p style={{
+            fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(20px, 3vw, 30px)',
+            color: 'var(--color-text)', lineHeight: 1.3, marginBottom: 28,
+          }}>
+            Every track, free — no account, no subscription.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

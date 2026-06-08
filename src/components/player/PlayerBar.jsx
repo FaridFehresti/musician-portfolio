@@ -9,6 +9,7 @@ export function PlayerBar() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume,
     play, pause, next, prev, seek, setVolume, audioError,
+    shuffle, repeat, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
 
   const [muted, setMuted] = useState(false)
@@ -106,7 +107,8 @@ export function PlayerBar() {
 
             {/* CENTER — transport + time */}
             <div className="flex flex-col items-center gap-1" style={{ justifySelf: 'center' }}>
-              <div className="flex items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <CtrlIcon onClick={toggleShuffle} label="Shuffle" active={shuffle}><ShuffleIcon /></CtrlIcon>
                 <CtrlIcon onClick={prev} label="Previous"><PrevIcon /></CtrlIcon>
                 <motion.button
                   onClick={togglePlayPause}
@@ -124,6 +126,9 @@ export function PlayerBar() {
                     : <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" style={{ marginLeft: 2 }}><path d="M4 3l9 5-9 5V3z" /></svg>}
                 </motion.button>
                 <CtrlIcon onClick={next} label="Next"><NextIcon /></CtrlIcon>
+                <CtrlIcon onClick={cycleRepeat} label={`Repeat: ${repeat}`} active={repeat !== 'off'}>
+                  {repeat === 'one' ? <RepeatOneIcon /> : <RepeatIcon />}
+                </CtrlIcon>
               </div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.04em' }}>
                 {fmtDuration(currentTime)} / {fmtDuration(duration)}
@@ -132,17 +137,20 @@ export function PlayerBar() {
 
             {/* RIGHT — volume + expand */}
             <div className="flex items-center gap-2 sm:gap-3" style={{ justifySelf: 'end' }}>
-              {/* Desktop: inline mute + slider */}
-              <div className="hidden md:flex items-center gap-2">
+              {/* Desktop: inline mute + slider + value */}
+              <div className="hidden md:flex items-center gap-2.5">
                 <CtrlIcon onClick={toggleMute} label={muted || volume === 0 ? 'Unmute' : 'Mute'}>
                   {muted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
                 </CtrlIcon>
                 <input
-                  type="range" min={0} max={1} step={0.02} value={volume}
+                  type="range" min={0} max={1} step={0.01} value={volume}
                   onChange={e => { setVolume(Number(e.target.value)); setMuted(false) }}
-                  className="w-20" aria-label="Volume"
-                  style={{ accentColor: 'var(--neon-magenta)' }}
+                  className="vol-slider" aria-label="Volume"
+                  style={{ width: 104, '--pct': `${Math.round(volume * 100)}%` }}
                 />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', minWidth: 26, textAlign: 'right' }}>
+                  {Math.round(volume * 100)}
+                </span>
               </div>
 
               {/* Mobile: sound icon → slider popover */}
@@ -168,10 +176,10 @@ export function PlayerBar() {
                           {muted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
                         </button>
                         <input
-                          type="range" min={0} max={1} step={0.02} value={volume}
+                          type="range" min={0} max={1} step={0.01} value={volume}
                           onChange={e => { setVolume(Number(e.target.value)); setMuted(false) }}
-                          className="flex-1" aria-label="Volume"
-                          style={{ accentColor: 'var(--neon-magenta)' }}
+                          className="vol-slider flex-1" aria-label="Volume"
+                          style={{ '--pct': `${Math.round(volume * 100)}%` }}
                         />
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', minWidth: 24, textAlign: 'right' }}>{Math.round(volume * 100)}</span>
                       </div>
@@ -210,17 +218,23 @@ function SeekBar({ progress, duration, onSeek }) {
   )
 }
 
-/* ─── Control icon button ─────────────────────────────────────────── */
-function CtrlIcon({ onClick, label, children }) {
+/* ─── Control icon button (active = lit accent, e.g. shuffle/repeat on) ── */
+function CtrlIcon({ onClick, label, active, children }) {
+  const rest = active ? 'var(--neon-magenta)' : 'var(--color-text)'
   return (
     <button
       onClick={onClick}
       title={label}
       aria-label={label}
+      aria-pressed={active}
       className="flex items-center justify-center rounded-full flex-shrink-0"
-      style={{ width: 36, height: 36, color: 'var(--color-text)', opacity: 0.85, cursor: 'pointer', transition: 'color 0.15s, opacity 0.15s' }}
-      onMouseEnter={e => { e.currentTarget.style.color = 'var(--neon-cyan)'; e.currentTarget.style.opacity = '1' }}
-      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.opacity = '0.85' }}
+      style={{
+        width: 34, height: 34, color: rest, opacity: active ? 1 : 0.85, cursor: 'pointer',
+        background: active ? 'color-mix(in srgb, var(--neon-magenta) 14%, transparent)' : 'transparent',
+        transition: 'color 0.15s, opacity 0.15s, background 0.15s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.color = active ? 'var(--neon-magenta)' : 'var(--neon-cyan)'; e.currentTarget.style.opacity = '1' }}
+      onMouseLeave={e => { e.currentTarget.style.color = rest; e.currentTarget.style.opacity = active ? '1' : '0.85' }}
     >
       {children}
     </button>
@@ -229,6 +243,17 @@ function CtrlIcon({ onClick, label, children }) {
 
 function PrevIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h2v10H4V3zm2 5l7-5v10L6 8z" /></svg> }
 function NextIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M10 3h2v10h-2V3zm-2 5L1 3v10l7-5z" /></svg> }
+const PB_STROKE = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+function ShuffleIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" {...PB_STROKE}><path d="M16 3h5v5" /><path d="M4 20 21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg> }
+function RepeatIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" {...PB_STROKE}><path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg> }
+function RepeatOneIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" {...PB_STROKE}>
+      <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+      <text x="12" y="15.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" fontFamily="var(--font-mono)">1</text>
+    </svg>
+  )
+}
 function VolumeIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><path d="M11 5a4 4 0 010 6M13 3a7 7 0 010 10" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" /></svg> }
 function MuteIcon() { return <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5L4 6H1v4h3l4 3.5V2.5z" /><line x1="11" y1="6" x2="15" y2="10" stroke="currentColor" strokeWidth="1.5" /><line x1="15" y1="6" x2="11" y2="10" stroke="currentColor" strokeWidth="1.5" /></svg> }
 function ExpandIcon() { return <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10l4-4 4 4" /></svg> }

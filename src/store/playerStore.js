@@ -22,6 +22,14 @@ function startTick(get) {
 /* Reference to the set function, set during store creation */
 let set_ref = null
 
+/* pick a random index that isn't the current one (for shuffle) */
+function randomOther(len, cur) {
+  if (len <= 1) return 0
+  let r = Math.floor(Math.random() * (len - 1))
+  if (r >= cur) r += 1
+  return r
+}
+
 export const usePlayerStore = create((set, get) => {
   set_ref = set   // capture so startTick can call it
 
@@ -33,6 +41,8 @@ export const usePlayerStore = create((set, get) => {
     isPlaying:    false,
     isPaused:     false,
     volume:       0.8,
+    shuffle:      false,
+    repeat:       'off',    // 'off' | 'all' | 'one'
     currentTime:  0,
     duration:     0,
     howl:         null,
@@ -83,7 +93,10 @@ export const usePlayerStore = create((set, get) => {
         onend() {
           set({ isPlaying: false, isPaused: false, currentTime: 0 })
           clearTick()
-          // Small delay so state settles before loading next
+          const { repeat, shuffle, queue, queueIndex } = get()
+          if (repeat === 'one') { newHowl.seek(0); newHowl.play(); return }   // loop this track
+          // stop at the end of the queue unless repeating all (or shuffling)
+          if (!shuffle && repeat !== 'all' && queueIndex >= queue.length - 1) return
           setTimeout(() => get().next(), 50)
         },
 
@@ -110,6 +123,7 @@ export const usePlayerStore = create((set, get) => {
       })
 
       const idx = get().queue.findIndex(t => t.id === track.id)
+      newHowl.loop(get().repeat === 'one')
 
       set({
         currentTrack: track,
@@ -153,17 +167,28 @@ export const usePlayerStore = create((set, get) => {
     },
 
     next() {
-      const { queue, queueIndex, loadTrack } = get()
+      const { queue, queueIndex, shuffle, loadTrack } = get()
       if (!queue.length) return
-      loadTrack(queue[(queueIndex + 1) % queue.length])
+      const i = shuffle ? randomOther(queue.length, queueIndex) : (queueIndex + 1) % queue.length
+      loadTrack(queue[i])
     },
 
     prev() {
-      const { queue, queueIndex, currentTime, howl, loadTrack } = get()
+      const { queue, queueIndex, currentTime, howl, shuffle, loadTrack } = get()
       if (!queue.length) return
       if (currentTime > 3) { howl?.seek(0); set({ currentTime: 0 }); return }
-      const prevIdx = ((queueIndex - 1) + queue.length) % queue.length
-      loadTrack(queue[prevIdx])
+      const i = shuffle
+        ? randomOther(queue.length, queueIndex)
+        : ((queueIndex - 1) + queue.length) % queue.length
+      loadTrack(queue[i])
+    },
+
+    toggleShuffle() { set(s => ({ shuffle: !s.shuffle })) },
+
+    cycleRepeat() {
+      const repeat = { off: 'all', all: 'one', one: 'off' }[get().repeat]
+      set({ repeat })
+      get().howl?.loop(repeat === 'one')
     },
   }
 })
