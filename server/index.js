@@ -260,9 +260,16 @@ app.use((err, _req, res, _next) => {
   res.status(err?.status || 500).json({ error: err?.message || 'server error' })
 })
 
-// Only listen when run directly (`node server/index.js`), not when imported.
-const isMain = pathToFileURL(process.argv[1] || '').href === import.meta.url
-if (isMain) {
+// Listen when this file is the entry point: run directly (`node server/index.js`)
+// OR launched by a process manager like pm2, whose fork wrapper replaces
+// process.argv[1] (so the plain argv check is false and the server would never
+// bind → 502 behind nginx). Only stays silent when imported purely for its
+// exported helpers (headTags / renderIndex).
+const isEntry =
+  pathToFileURL(process.argv[1] || '').href === import.meta.url ||
+  process.env.pm_id !== undefined ||      // pm2 sets pm_id for managed processes
+  process.env.PM2_HOME !== undefined
+if (isEntry) {
   app.listen(PORT, () => {
     console.log(`[cms] API on http://localhost:${PORT}  (admin user: ${ADMIN_USER})`)
   })
