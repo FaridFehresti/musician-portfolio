@@ -9,6 +9,7 @@ export const DEFAULT_SITE = {
   theme: 'midnight',
   logoUrl: null,
   logoHeight: 90,            // px height of the logo in the hero (when set)
+  youtubeUrl: '',            // channel URL → "Go to YouTube" button in Videos section
 }
 
 export const DEFAULT_ABOUT = {

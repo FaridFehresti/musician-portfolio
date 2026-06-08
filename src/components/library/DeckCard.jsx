@@ -43,7 +43,7 @@ const EDGE = [
 
 export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
   const {
-    currentTrack, isPlaying, isPaused,
+    currentTrack, isPlaying,
     loadTrack, setQueue, play, pause, next, prev,
     currentTime, duration, seek,
     shuffle, repeat, toggleShuffle, cycleRepeat,
@@ -51,7 +51,6 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
 
   const isActive = currentTrack?.id === track.id
   const playing  = isActive && isPlaying
-  const paused   = isActive && isPaused
   const progress = isActive && duration > 0 ? currentTime / duration : 0
 
   const reduced     = usePrefersReducedMotion()
@@ -188,7 +187,8 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
             </>
           )}
 
-          <PlayButton visible={hovered || isActive} playing={playing} paused={paused} />
+          {/* (cover-overlay play button removed — the transport BigPlay below
+              is the single play control; the cover stays click-to-play) */}
           {playing && <PlayingPulse />}
         </div>
 
@@ -397,26 +397,6 @@ function GradientCover({ grad, genre }) {
   )
 }
 
-/* ─── Centre play / pause (over the cover) ─────────────────────────── */
-function PlayButton({ visible, playing, paused }) {
-  return (
-    <div
-      style={{
-        position: 'absolute', top: '50%', left: '50%', transform: `translate(-50%, -50%) scale(${visible ? 1 : 0.85})`,
-        width: 54, height: 54, borderRadius: '50%',
-        background: playing || paused ? 'color-mix(in srgb, var(--neon-magenta) 88%, transparent)' : 'rgba(10,8,20,0.46)',
-        border: '2px solid var(--neon-magenta)', boxShadow: '0 0 20px var(--glow-magenta)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
-        pointerEvents: 'none', zIndex: 7, backdropFilter: 'blur(4px)',
-        opacity: visible ? 1 : 0, transition: 'opacity 0.18s ease, background 0.18s ease, transform 0.18s ease',
-      }}
-    >
-      {playing
-        ? <svg width="15" height="17" viewBox="0 0 14 16" fill="currentColor"><path d="M0 0h4v16H0zM9 0h4v16H9z" /></svg>
-        : <svg width="15" height="17" viewBox="0 0 14 16" fill="currentColor" style={{ marginLeft: 3 }}><path d="M0 0l13 8L0 16z" /></svg>}
-    </div>
-  )
-}
 
 /* ─── Now-playing mark — animated bars (active), static otherwise ───── */
 function NowPlayingMark({ playing, active }) {

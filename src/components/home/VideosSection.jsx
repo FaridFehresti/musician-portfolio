@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { VideoLightbox } from '../ui/VideoLightbox'
+import { YoutubeIcon } from '../icons/SocialIcons'
 import { GENRE_GRADIENTS } from '../../data/tracks'
 
 /* A clickable video thumbnail (cover art + play overlay). Reused by the home
@@ -66,7 +67,7 @@ export function VideoCard({ track, onOpen }) {
 
 /* Home "Videos" section — shows the first few video tracks + a See-all link.
    Renders nothing when the artist has no videos. */
-export function VideosSection({ tracks, limit = 4 }) {
+export function VideosSection({ tracks, youtubeUrl, limit = 4 }) {
   const [open, setOpen] = useState(null)
   const videos = tracks.filter(t => t.video)
   if (!videos.length) return null
@@ -78,7 +79,7 @@ export function VideosSection({ tracks, limit = 4 }) {
         <motion.div
           initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="flex items-baseline justify-between gap-4 mb-8"
+          className="flex items-center justify-between gap-4 mb-8 flex-wrap"
         >
           <div className="flex items-baseline gap-4">
             <h2 style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(26px, 4vw, 48px)', color: 'var(--color-text)' }}>
@@ -88,14 +89,34 @@ export function VideosSection({ tracks, limit = 4 }) {
               — {videos.length} {videos.length === 1 ? 'video' : 'videos'}
             </span>
           </div>
-          {videos.length > shown.length && (
-            <Link to="/videos" style={{
-              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: 'var(--color-accent)', textDecoration: 'none', whiteSpace: 'nowrap',
-            }}>
-              See all →
-            </Link>
-          )}
+
+          <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
+            {youtubeUrl && (
+              <a
+                href={youtubeUrl} target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999,
+                  border: '1px solid color-mix(in srgb, var(--accent) 50%, transparent)', color: 'var(--color-accent)',
+                  background: 'transparent', textDecoration: 'none',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  transition: 'background 0.18s, border-color 0.18s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)'; e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 85%, transparent)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 50%, transparent)' }}
+              >
+                <YoutubeIcon size={15} />
+                Go to YouTube
+              </a>
+            )}
+            {videos.length > shown.length && (
+              <Link to="/videos" style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: 'var(--color-accent)', textDecoration: 'none', whiteSpace: 'nowrap',
+              }}>
+                See all →
+              </Link>
+            )}
+          </div>
         </motion.div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 22 }}>

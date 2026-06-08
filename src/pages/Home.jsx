@@ -252,7 +252,7 @@ export default function Home() {
       </section>
 
       {/* ── Videos (shown only when the artist has videos) ───────────── */}
-      <VideosSection tracks={tracks} />
+      <VideosSection tracks={tracks} youtubeUrl={site.youtubeUrl} />
 
       {/* ── CTA ──────────────────────────────────────────────────────── */}
       <section className="px-6 pb-40 text-center">

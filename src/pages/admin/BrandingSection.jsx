@@ -42,6 +42,7 @@ export function BrandingSection({ site, onSaved }) {
 
       <Text label="Artist name" value={draft.artistName} onChange={v => set({ artistName: v })} placeholder="Artist Name" />
       <Text label="Tagline" value={draft.tagline} onChange={v => set({ tagline: v })} hint="The line under the hero title." />
+      <Text label="YouTube channel URL" value={draft.youtubeUrl} onChange={v => set({ youtubeUrl: v })} placeholder="https://youtube.com/@yourchannel" hint="When set, a “Go to YouTube” button appears on the home Videos section." />
 
       <Field label="Theme" hint="Sets the colour theme for the whole public site.">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
