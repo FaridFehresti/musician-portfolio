@@ -10,7 +10,6 @@ import { fileURLToPath } from 'node:url'
 import {
   DEFAULT_SITE, DEFAULT_ABOUT, DEFAULT_SOCIALS, DEFAULT_LINKS, DEFAULT_DONATION,
 } from '../src/lib/defaults.js'
-import { tracks as SEED_TRACKS } from '../src/data/tracks.js'
 import { assignDefaultSlots } from '../src/lib/homeSlots.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -129,25 +128,16 @@ export function nextSort() {
   return (row?.m ?? -1) + 1
 }
 
-/* ── First-run seed ────────────────────────────────────────────────── */
+/* ── First-run seed ──────────────────────────────────────────────────
+   Only the default branding/about/socials settings are seeded (and the
+   frontend falls back to these anyway). The track catalogue starts EMPTY —
+   a fresh install / deploy has no music; content is added via the admin CMS. */
 export function seedIfEmpty() {
   if (getSetting('site') == null) setSetting('site', DEFAULT_SITE)
   if (getSetting('about') == null) setSetting('about', DEFAULT_ABOUT)
   if (getSetting('socials') == null) setSetting('socials', DEFAULT_SOCIALS)
   if (getSetting('links') == null) setSetting('links', DEFAULT_LINKS)
   if (getSetting('donation') == null) setSetting('donation', DEFAULT_DONATION)
-
-  const count = db.prepare('SELECT COUNT(*) AS n FROM tracks').get().n
-  if (count === 0) {
-    const slots = assignDefaultSlots(SEED_TRACKS)
-    SEED_TRACKS.forEach((t, i) => {
-      upsertTrack({
-        ...t,
-        inHero: true, inFeatured: true, inLibrary: true, published: true,
-        homeSlot: slots[i], sort: i,
-      })
-    })
-  }
 }
 
 /* Distribute existing tracks into home slots once, if none are assigned yet
