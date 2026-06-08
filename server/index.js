@@ -11,7 +11,7 @@ import cookieParser from 'cookie-parser'
 import multer from 'multer'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join, extname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
 
 import {
@@ -48,6 +48,7 @@ const SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me'
 const COOKIE = 'cms_session'
 
 const app = express()
+app.set('trust proxy', true)   // correct req.protocol/host behind nginx etc.
 app.use(express.json({ limit: '2mb' }))
 app.use(cookieParser(SECRET))
 
@@ -199,11 +200,59 @@ app.post('/api/admin/upload', requireAuth, upload.single('file'), (req, res) => 
   res.json({ url: `/uploads/${sub}/${req.file.filename}` })
 })
 
-/* ── Production: serve the built SPA with history fallback ─────────── */
+/* ── Production: serve the built SPA, injecting per-request <head> tags ──
+   Social crawlers (Twitter/X, Discord, Facebook, iMessage) don't run JS, so
+   the favicon + Open Graph / Twitter Card tags must be in the served HTML.
+   We read the current site settings and inject them, using the uploaded logo
+   as the favicon and the share-card image. */
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+function publicBase(req) {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '')
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0]
+  return `${proto}://${req.get('host')}`
+}
+export function headTags(req) {
+  const site = getSetting('site', DEFAULT_SITE)
+  const base = publicBase(req)
+  const name = site.artistName || 'Artist'
+  const title = `${name} — Music`
+  const desc = site.tagline || 'Listen free — no account, no subscription.'
+  const logo = site.logoUrl ? base + site.logoUrl : ''
+  const url = base + (req.originalUrl || '/')
+  return [
+    `<title>${esc(title)}</title>`,
+    `<meta name="description" content="${esc(desc)}" />`,
+    logo && `<link rel="icon" href="${esc(site.logoUrl)}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="${esc(name)}" />`,
+    `<meta property="og:title" content="${esc(title)}" />`,
+    `<meta property="og:description" content="${esc(desc)}" />`,
+    `<meta property="og:url" content="${esc(url)}" />`,
+    logo && `<meta property="og:image" content="${esc(logo)}" />`,
+    `<meta name="twitter:card" content="${logo ? 'summary_large_image' : 'summary'}" />`,
+    `<meta name="twitter:title" content="${esc(title)}" />`,
+    `<meta name="twitter:description" content="${esc(desc)}" />`,
+    logo && `<meta name="twitter:image" content="${esc(logo)}" />`,
+  ].filter(Boolean).join('\n    ')
+}
+export function renderIndex(html, req) {
+  // strip the static title / favicon / description / og / twitter tags, then inject fresh ones
+  const stripped = html
+    .replace(/<title>[\s\S]*?<\/title>/i, '')
+    .replace(/<link[^>]*\brel=["']icon["'][^>]*>/gi, '')
+    .replace(/<meta[^>]*\b(?:name=["'](?:description|twitter:[^"']*)["']|property=["']og:[^"']*["'])[^>]*>/gi, '')
+  return stripped.replace('</head>', `    ${headTags(req)}\n  </head>`)
+}
+
 const DIST = join(ROOT, 'dist')
 if (existsSync(join(DIST, 'index.html'))) {
-  app.use(express.static(DIST))
-  app.get(/^(?!\/api|\/uploads).*/, (_req, res) => res.sendFile(join(DIST, 'index.html')))
+  const INDEX_HTML = readFileSync(join(DIST, 'index.html'), 'utf8')
+  app.use(express.static(DIST, { index: false, maxAge: '1h' }))
+  app.get(/^(?!\/api|\/uploads).*/, (req, res) => {
+    res.set('Cache-Control', 'no-cache').type('html').send(renderIndex(INDEX_HTML, req))
+  })
 }
 
 app.use((err, _req, res, _next) => {
@@ -211,6 +260,10 @@ app.use((err, _req, res, _next) => {
   res.status(err?.status || 500).json({ error: err?.message || 'server error' })
 })
 
-app.listen(PORT, () => {
-  console.log(`[cms] API on http://localhost:${PORT}  (admin user: ${ADMIN_USER})`)
-})
+// Only listen when run directly (`node server/index.js`), not when imported.
+const isMain = pathToFileURL(process.argv[1] || '').href === import.meta.url
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(`[cms] API on http://localhost:${PORT}  (admin user: ${ADMIN_USER})`)
+  })
+}

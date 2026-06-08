@@ -9,6 +9,24 @@ import { useThemeStore } from './themeStore'
    static catalog + defaults (so the site is fully functional with no server
    running), then `load()` replaces it with the live CMS content from /api. */
 
+/* Reflect branding into the document: theme, tab title, and favicon (the
+   uploaded logo). Runs live so admin changes show without a reload. */
+function applyFavicon(url) {
+  if (typeof document === 'undefined' || !url) return
+  let link = document.querySelector('link[rel="icon"]')
+  if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
+  link.removeAttribute('type')   // logo may be png/webp/svg — let the browser detect
+  link.href = url
+}
+function applySite(site) {
+  if (!site) return
+  if (site.theme) useThemeStore.getState().setTheme(site.theme)
+  if (typeof document !== 'undefined' && site.artistName) {
+    document.title = `${site.artistName} — Music`
+  }
+  applyFavicon(site.logoUrl)
+}
+
 const FB_SLOTS = assignDefaultSlots(STATIC_TRACKS)
 const FALLBACK = {
   ...DEFAULT_CONTENT,
@@ -29,7 +47,7 @@ export const useContentStore = create((set) => ({
     try {
       const c = await api.content()
       set({ ...c, loaded: true, online: true, error: null })
-      if (c.site?.theme) useThemeStore.getState().setTheme(c.site.theme)
+      applySite(c.site)
     } catch (e) {
       // Keep the fallback content — the site still works offline.
       set({ loaded: true, online: false, error: e.message })
@@ -39,7 +57,7 @@ export const useContentStore = create((set) => ({
   // Let the admin push fresh content into the public store after a save.
   applyContent(c) {
     set({ ...c })
-    if (c.site?.theme) useThemeStore.getState().setTheme(c.site.theme)
+    applySite(c.site)
   },
 }))
 
