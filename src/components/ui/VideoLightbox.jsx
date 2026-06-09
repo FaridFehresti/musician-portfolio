@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { usePlayerStore } from '../../store/playerStore'
 
 /**
  * Full-screen video lightbox for a track's optional YouTube / Vimeo link.
@@ -40,8 +41,22 @@ function toEmbedUrl(url) {
   return url
 }
 
+/** Friendly name for the "open original" link, or null for a generic label. */
+function sourceName(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '')
+    if (host === 'youtu.be' || host.endsWith('youtube.com')) return 'YouTube'
+    if (host.endsWith('vimeo.com')) return 'Vimeo'
+  } catch { /* not a parseable URL */ }
+  return null
+}
+
 export function VideoLightbox({ url, title, onClose }) {
   const embed = toEmbedUrl(url)
+  const source = sourceName(url)
+
+  // Pause any playing audio on open so the track and the video don't overlap.
+  useEffect(() => { usePlayerStore.getState().pause() }, [])
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose() }
@@ -97,19 +112,46 @@ export function VideoLightbox({ url, title, onClose }) {
           {title}
         </p>
       )}
-      <button
-        onClick={onClose}
-        aria-label="Close video"
+      {/* Top-right controls: open the original link, then close */}
+      <div
+        onClick={e => e.stopPropagation()}
         style={{
           position: 'absolute', top: 'max(16px, 3vmin)', right: 'max(16px, 4vmin)',
-          width: 40, height: 40, borderRadius: '50%',
-          background: 'rgba(10,10,10,0.8)', border: '1px solid rgba(240,236,224,0.18)',
-          color: 'rgba(240,236,224,0.85)', cursor: 'pointer', fontSize: 18, lineHeight: 1,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', gap: 10,
         }}
       >
-        ✕
-      </button>
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={source ? `Watch on ${source} (opens in a new tab)` : 'Open video link (opens in a new tab)'}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7, height: 40, padding: '0 16px', borderRadius: 999,
+              background: 'rgba(10,10,10,0.8)', border: '1px solid rgba(240,236,224,0.18)',
+              color: 'rgba(240,236,224,0.92)', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap',
+              fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.04em', backdropFilter: 'blur(4px)',
+            }}
+          >
+            {source ? `Watch on ${source}` : 'Open link'}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M7 17 17 7" /><path d="M9 7h8v8" />
+            </svg>
+          </a>
+        )}
+        <button
+          onClick={onClose}
+          aria-label="Close video"
+          style={{
+            width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(10,10,10,0.8)', border: '1px solid rgba(240,236,224,0.18)',
+            color: 'rgba(240,236,224,0.85)', cursor: 'pointer', fontSize: 18, lineHeight: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)',
+          }}
+        >
+          ✕
+        </button>
+      </div>
     </motion.div>
   )
 }

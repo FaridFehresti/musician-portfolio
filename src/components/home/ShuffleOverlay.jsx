@@ -64,7 +64,9 @@ export function ShuffleStage({ tracks, bp, onPick, onClose }) {
       if (name === 'reveal') revealAt = t
       t += dur
     })
-    timers.push(setTimeout(() => onPick(deck[chosen]), revealAt + 140))
+    // play the picked track AND hand the shuffled deck up as the queue, so
+    // Next/Prev walk this bounded random hand (MAXN) — not the whole library.
+    timers.push(setTimeout(() => onPick(deck[chosen], deck), revealAt + 140))
     timers.push(setTimeout(() => onClose(), t))
     return () => timers.forEach(clearTimeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps

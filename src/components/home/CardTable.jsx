@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { DeckCard, CARD_W, CARD_H } from '../library/DeckCard'
 import { ShuffleStage } from './ShuffleOverlay'
 import { usePlayerStore } from '../../store/playerStore'
+import { useContentStore } from '../../store/contentStore'
 import { useBreakpoint } from '../../hooks/useViewport'
 import { HOME_SLOTS, groupBySlot } from '../../lib/homeSlots'
 
@@ -19,10 +20,15 @@ export function CardTable({ tracks }) {
   const bp = useBreakpoint()
   const [shuffling, setShuffling] = useState(false)
   const isDesktop = bp === 'desktop'
+  // Optional genre label per pile, set in the CMS (Music → Home deck arrangement).
+  const slotLabels = useContentStore(s => s.site?.homeSlots) || {}
 
-  function play(track) {
+  function play(track, queue) {
     if (!track) return
-    setQueue(tracks)          // queue == dealt order → Next/Prev follow the cards
+    // Default queue is the dealt order so Next/Prev follow the cards. The
+    // shuffle passes its own bounded random hand so playback stays within that
+    // hand instead of walking the entire library.
+    setQueue(queue && queue.length ? queue : tracks)
     loadTrack(track)
   }
 
@@ -61,14 +67,18 @@ export function CardTable({ tracks }) {
               {/* Top row: stacks */}
               <div style={{ display: 'flex', gap: 'clamp(14px, 2.5vw, 40px)', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {stackSlots.filter(s => bySlot[s.key].length).map(s => (
-                  <CardStack key={s.key} tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={1} onPlay={play} currentTrack={currentTrack} />
+                  <PileColumn key={s.key} label={slotLabels[s.key]} reserve={stackSlots.some(x => bySlot[x.key].length && slotLabels[x.key])}>
+                    <CardStack tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={1} onPlay={play} currentTrack={currentTrack} />
+                  </PileColumn>
                 ))}
               </div>
 
               {/* Bottom row: fans */}
               <div style={{ display: 'flex', gap: 'clamp(16px, 4vw, 60px)', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {fanSlots.filter(s => bySlot[s.key].length).map(s => (
-                  <CardFan key={s.key} tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={0.62} currentTrack={currentTrack} />
+                  <PileColumn key={s.key} label={slotLabels[s.key]} reserve={fanSlots.some(x => bySlot[x.key].length && slotLabels[x.key])}>
+                    <CardFan tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={0.62} currentTrack={currentTrack} />
+                  </PileColumn>
                 ))}
               </div>
             </>
@@ -115,10 +125,38 @@ function DeckToolbar({ onShuffle }) {
   )
 }
 
-/* ═══ A stack of real cards — click behind → plays → surfaces ═══════════
-   The front card is always the active one (so Next/Prev visibly surface the
-   playing card); otherwise the first card sits on top. Order is derived, not
-   stored — clicking a buried card just plays it, which makes it active. */
+/* ═══ A pile + its optional genre label (set in the CMS) ════════════════
+   `reserve` keeps every pile in a row vertically aligned: when ANY pile in
+   the row is labelled, unlabelled ones render an invisible placeholder of the
+   same height so their card tops still line up. */
+function PileColumn({ label, reserve, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+      {(label || reserve) && (
+        <span
+          aria-hidden={!label}
+          style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase',
+            color: 'var(--color-accent)', whiteSpace: 'nowrap', padding: '4px 13px', borderRadius: 999,
+            background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--accent) 32%, transparent)',
+            visibility: label ? 'visible' : 'hidden',
+          }}
+        >
+          {label || '—'}
+        </span>
+      )}
+      {children}
+    </div>
+  )
+}
+
+/* ═══ A stack of real cards ══════════════════════════════════════════════
+   Starts COLLAPSED — only the top card (#1) shows, the rest hidden directly
+   behind it. The first time the user plays a card from the stack it springs
+   OPEN into a fanned pile and stays open (sticky). Once open the front card
+   is always the active one (so Next/Prev visibly surface the playing card),
+   and clicking a buried card plays it (which surfaces it). */
 function CardStack({ tracks, allTracks, startIndex, baseScale, onPlay, currentTrack }) {
   const n = tracks.length
   const w = CARD_W * baseScale
@@ -126,9 +164,20 @@ function CardStack({ tracks, allTracks, startIndex, baseScale, onPlay, currentTr
   const OX = 40, OY = 10, ROT = 5
 
   const activeLocal = tracks.findIndex(t => t.id === currentTrack?.id)
+
+  // Open once a card here has been played; stay open for the session
+  // (adjust-state-while-rendering — no effect cascade).
+  const [opened, setOpened] = useState(activeLocal >= 0)
+  if (activeLocal >= 0 && !opened) setOpened(true)
+
   const front = activeLocal >= 0 ? activeLocal : 0
   const displayOrder = [front, ...tracks.map((_, i) => i).filter(i => i !== front)]
 
+  // The box is ALWAYS sized for the full fanned spread, so the layout never
+  // reflows when the stack opens — the front card (top-left, x:0/y:0) stays
+  // exactly put and the rest just fade + slide out from behind it. (Animating
+  // the box size instead made the centred row re-centre, shifting the front
+  // card and slicing titles mid-motion — that was the bug.)
   return (
     <motion.div
       variants={{ hidden: { opacity: 0, y: 48, scale: 0.94 }, visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 190, damping: 19 } } }}
@@ -140,7 +189,9 @@ function CardStack({ tracks, allTracks, startIndex, baseScale, onPlay, currentTr
         return (
           <motion.div
             key={track.id}
-            animate={{ x: d * OX, y: d * OY, rotate: d * ROT, scale: 1 - d * 0.05 }}
+            animate={opened
+              ? { x: d * OX, y: d * OY, rotate: d * ROT, scale: 1 - d * 0.05, opacity: 1 }
+              : { x: 0, y: 0, rotate: 0, scale: 1, opacity: isFront ? 1 : 0 }}
             transition={SWAP}
             style={{ position: 'absolute', top: 0, left: 0, width: w, height: h, zIndex: n - d, transformOrigin: 'center center' }}
           >
@@ -148,12 +199,13 @@ function CardStack({ tracks, allTracks, startIndex, baseScale, onPlay, currentTr
               <DeckCard track={track} index={startIndex + i} allTracks={allTracks} />
             </div>
 
-            {/* buried cards catch the click → play (which surfaces them) */}
+            {/* buried cards catch the click → play (which surfaces them);
+                inert while collapsed so only the top card #1 is playable */}
             {!isFront && (
               <div
                 onClick={() => onPlay(track)}
                 title={`Play “${track.title}”`}
-                style={{ position: 'absolute', inset: 0, zIndex: 60, cursor: 'pointer', borderRadius: 20 * baseScale }}
+                style={{ position: 'absolute', inset: 0, zIndex: 60, cursor: 'pointer', borderRadius: 20 * baseScale, pointerEvents: opened ? 'auto' : 'none' }}
               />
             )}
           </motion.div>

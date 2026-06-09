@@ -20,7 +20,7 @@ function getGraph(ctx, node) {
     const source = ctx.createMediaElementSource(node)
     const analyser = ctx.createAnalyser()
     analyser.fftSize = 256
-    analyser.smoothingTimeConstant = 0.8
+    analyser.smoothingTimeConstant = 0.6   // lower = snappier; preserves transient hits
     source.connect(analyser)
     analyser.connect(ctx.destination)
     g = { source, analyser }

@@ -163,20 +163,19 @@ export function LinksSection({ links, onSaved }) {
 export function DonationSection({ donation, onSaved }) {
   const { draft, set, setDraft, dirty, saving, savedAt, save } = useEditor('donation', donation, onSaved)
   return (
-    <Panel title="Donations" desc="The Support page." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
+    <Panel title="Donations" desc="The Support page. Tips go through a single Checkya link — no preset amounts." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
       <Text label="Heading" value={draft.heading} onChange={v => set({ heading: v })} />
       <Area label="Subtext" value={draft.subtext} onChange={v => set({ subtext: v })} rows={2} />
       <Text
-        label="Tip amounts"
-        hint="Comma separated, e.g. $3, $5, $10"
-        value={(draft.amounts || []).join(', ')}
-        onChange={v => set({ amounts: v.split(',').map(s => s.trim()).filter(Boolean) })}
+        label="Checkya link"
+        hint="Your Checkya tip / payment page. This is the only place money is collected."
+        value={draft.checkyaUrl}
+        onChange={v => set({ checkyaUrl: v })}
+        placeholder="https://checkya.com/your-handle"
       />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <Text label="Ko-fi URL" value={draft.kofiUrl} onChange={v => set({ kofiUrl: v })} placeholder="https://ko-fi.com/you" />
-        <Text label="Ko-fi button label" value={draft.kofiLabel} onChange={v => set({ kofiLabel: v })} />
-        <Text label="PayPal URL" value={draft.paypalUrl} onChange={v => set({ paypalUrl: v })} placeholder="https://paypal.me/you" />
-        <Text label="PayPal button label" value={draft.paypalLabel} onChange={v => set({ paypalLabel: v })} />
+        <Text label="Button label" value={draft.buttonLabel} onChange={v => set({ buttonLabel: v })} placeholder="Leave a tip" />
+        <Text label="Note under button" value={draft.note} onChange={v => set({ note: v })} placeholder="Secure checkout via Checkya — no account needed." />
       </div>
       <Field label="“Why donate” cards">
         <RowList

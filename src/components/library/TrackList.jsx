@@ -66,9 +66,9 @@ export function TrackList({ tracks }) {
               </p>
             </div>
 
-            {/* Genre · BPM */}
+            {/* Genre */}
             <span className="hidden sm:block" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-              {track.genre} · {track.bpm} BPM
+              {track.genre}
             </span>
 
             {/* Play / pause glyph */}

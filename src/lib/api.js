@@ -1,6 +1,10 @@
 /* Tiny fetch wrapper for the CMS API. Same-origin paths (/api/*) — Vite proxies
    them to the Express server in dev; in production they're served by it too. */
 
+// Mirrors the server's multer fileSize cap (server/index.js MAX_UPLOAD_MB) so
+// oversized uploads fail instantly instead of after a doomed full transfer.
+const MAX_UPLOAD_MB = 250
+
 async function req(path, opts = {}) {
   const res = await fetch(path, {
     credentials: 'include',
@@ -21,6 +25,10 @@ async function req(path, opts = {}) {
 export const api = {
   // public
   content: () => req('/api/content'),
+  recordPlay: (trackId) => req('/api/plays', { method: 'POST', body: JSON.stringify({ trackId }) }),
+
+  // analytics (admin)
+  analytics: (days = 30) => req(`/api/admin/analytics?days=${days}`),
 
   // auth
   session: () => req('/api/admin/session'),
@@ -39,6 +47,9 @@ export const api = {
 
   // uploads → { url }
   async upload(type, file) {
+    if (file && file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      throw new Error(`File is too large (max ${MAX_UPLOAD_MB} MB).`)
+    }
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch(`/api/admin/upload?type=${encodeURIComponent(type)}`, {

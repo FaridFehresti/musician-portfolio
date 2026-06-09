@@ -20,7 +20,6 @@ export default function Library() {
     switch (sort) {
       case 'title':    list.sort((a, b) => a.title.localeCompare(b.title)); break
       case 'duration': list.sort((a, b) => a.duration - b.duration); break
-      case 'bpm':      list.sort((a, b) => a.bpm - b.bpm); break
       case 'newest':   list.sort((a, b) => b.year - a.year); break
     }
     return list
@@ -123,7 +122,6 @@ export default function Library() {
               <option value="default">Default</option>
               <option value="title">Title A → Z</option>
               <option value="duration">Duration ↑</option>
-              <option value="bpm">BPM ↑</option>
               <option value="newest">Newest</option>
             </select>
           </div>

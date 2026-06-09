@@ -3,11 +3,13 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Tilt from 'react-parallax-tilt'
 import { usePlayerStore } from '../../store/playerStore'
+import { useFavoritesStore } from '../../store/favoritesStore'
 import { GENRE_GRADIENTS, fmtDuration } from '../../data/tracks'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useCursorFacing } from '../../hooks/useCursorFacing'
 import { useIsHoverDevice } from '../../hooks/useViewport'
 import { VideoLightbox } from '../ui/VideoLightbox'
+import { ShareButton } from '../ui/ShareButton'
 
 /* ── Sparkle texture: SVG fractal noise punched into sparse bright dots. ── */
 const SPARKLE_SVG =
@@ -57,12 +59,15 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
   const hoverDevice = useIsHoverDevice()
   const tiltOn      = tiltEnabled && !reduced && hoverDevice
   const [hovered, setHovered] = useState(false)
-  const [liked, setLiked]     = useState(false)
   const [videoOpen, setVideoOpen] = useState(false)
 
+  // Likes are global + persisted (localStorage) — they drive the favorites
+  // deck on Now Playing. Selecting just the boolean keeps re-renders minimal.
+  const liked = useFavoritesStore(s => s.ids.includes(track?.id))
+  const toggleFavorite = useFavoritesStore(s => s.toggle)
+
   function openVideo() {
-    if (isActive && isPlaying) pause()   // don't play audio under the video
-    setVideoOpen(true)
+    setVideoOpen(true)   // VideoLightbox pauses any playing audio on open
   }
 
   const stageRef = useRef(null)
@@ -72,10 +77,11 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
   const facingRef = useCursorFacing(tiltOn && !hovered, 9)
 
   const grad   = GENRE_GRADIENTS[track?.genre] || ['#1a0a33', '#08041a']
-  // Holographic foil removed — the white light streak it cast on hover was
-  // unwanted. Hover keeps the 3D tilt + lift only. (Flip to `tiltOn && hovered`
-  // to bring a subtle foil back.)
-  const foilOn = false
+  // Holographic GLASS foil on hover — cursor-tracked (onMove writes the --mx/
+  // --my/--hyp CSS vars the .holo-* layers read in globals.css). Only on
+  // hover-capable, tilt-enabled cards (home / library), where the pointer
+  // actually drives it; it blooms toward the cursor and fades in over 0.4s.
+  const foilOn = tiltOn && hovered
 
   /* Pointer → CSS vars on the stage; rAF-throttled to one write per frame. */
   const onMove = useCallback((_rx, _ry, rxp, ryp) => {
@@ -166,11 +172,14 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
             ? <img src={track.coverArt} alt={track.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             : <GradientCover grad={grad} genre={track?.genre} />}
 
-          {/* hover/active darken so the play button + chip stay readable */}
+          {/* hover/active darken so the play button + chip stay readable.
+              The spread MUST exceed half the cover (206/2 = 103px) or the inset
+              shadow from opposing edges doesn't meet — leaving a bright ~6px
+              square in the dead centre (the "weird square" bug). 220px covers it. */}
           <div style={{
             position: 'absolute', inset: 0, pointerEvents: 'none',
             background: 'linear-gradient(180deg, rgba(0,0,0,0.30) 0%, transparent 22%)',
-            boxShadow: (hovered || isActive) ? 'inset 0 0 0 100px rgba(6,3,16,0.28)' : 'none',
+            boxShadow: (hovered || isActive) ? 'inset 0 0 0 220px rgba(6,3,16,0.28)' : 'none',
             transition: 'box-shadow 0.2s ease',
           }} />
 
@@ -195,35 +204,90 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
         {/* index chip — legible over any artwork */}
         <IndexChip n={index + 1} active={isActive} />
 
+        {/* genre — a frosted "vinyl tag" mirroring the index chip on the cover's
+            top-right. Lives on the card face (sibling of the cover, like the
+            index chip) so it costs ZERO body height; drops below the playing
+            pulse dot while this card is the one playing. */}
+        {track?.genre && (
+          <div style={{
+            position: 'absolute', top: playing ? 36 : PAD + 7, right: PAD + 7, zIndex: 6,
+            maxWidth: COVER - 60, pointerEvents: 'none',
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '3px 8px 3px 6px', borderRadius: 8,
+            background: 'rgba(8,5,16,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+            border: '1px solid color-mix(in srgb, var(--neon-cyan) 38%, transparent)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.35)', transition: 'top 0.2s ease',
+          }}>
+            <svg width="11" height="11" viewBox="0 0 16 16" aria-hidden>
+              <circle cx="8" cy="8" r="7" fill="none" stroke="var(--neon-cyan)" strokeWidth="1.1" opacity="0.92" />
+              <circle cx="8" cy="8" r="2.1" fill="var(--neon-cyan)" opacity="0.92" />
+            </svg>
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 600, lineHeight: 1,
+              letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--neon-cyan)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {track.genre}
+            </span>
+          </div>
+        )}
+
         {/* ── Body: mini-player (now-playing mark · title · like · transport) */}
         <div style={{
           position: 'absolute', left: PAD, right: PAD, top: PAD + COVER, bottom: PAD, zIndex: 5,
           display: 'flex', flexDirection: 'column',
         }}>
-          {/* Title row */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginTop: 12 }}>
-            <span style={{ marginTop: 3, flexShrink: 0 }}>
-              <NowPlayingMark playing={playing} active={isActive} />
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
-                fontSize: 17, lineHeight: '21px', color: accent,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {track.title}
-              </p>
-              <p style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10.5, lineHeight: '15px', color: onCardMuted,
-                letterSpacing: '0.03em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
+          {/* now-playing eq mark — floated to the body's top-left, OUT of the
+              centered text flow (position:absolute = zero layout cost), so it
+              never shifts the title off centre. */}
+          <span aria-hidden style={{ position: 'absolute', top: 14, left: 0, pointerEvents: 'none' }}>
+            <NowPlayingMark playing={playing} active={isActive} />
+          </span>
+
+          {/* action cluster — floated to the body's top-right, also OUT of flow,
+              so the title centres on the true card midline whether or not the
+              (conditional) video icon renders. Button wiring is unchanged. */}
+          <div style={{ position: 'absolute', top: 9, right: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
+            {track?.video && <VideoButton onClick={e => { e.stopPropagation(); openVideo() }} />}
+            <ShareButton track={track} iconSize={15} color="rgba(255,255,255,0.55)" activeColor="var(--neon-cyan)" />
+            <LikeButton liked={liked} onToggle={() => toggleFavorite(track?.id)} />
+          </div>
+
+          {/* Centered title + artist·album. The eq mark + icon cluster float at
+              the corners at the TITLE's vertical level, so ONLY the title needs
+              padding to clear them — it carries symmetric paddingLeft/Right:46 so
+              it stays centred on the true midline. The artist·album line sits
+              BELOW the clusters, so it spans the full width (no padding) and a
+              long "artist · album" isn't squeezed into a double ellipsis. */}
+          <div style={{ marginTop: 12, textAlign: 'center' }}>
+            <p style={{
+              margin: 0, paddingLeft: 46, paddingRight: 46,
+              fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
+              fontSize: 17, lineHeight: '21px', color: accent,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {track.title}
+            </p>
+            {/* artist · album — one centered line; album folds in (genre lives on
+                the cover tag). Album shrinks first, then truncates. */}
+            <p style={{
+              display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 5,
+              margin: 0, minWidth: 0,
+              fontFamily: 'var(--font-mono)', fontSize: 10.5, lineHeight: '15px',
+              letterSpacing: '0.03em', whiteSpace: 'nowrap', overflow: 'hidden',
+            }}>
+              <span style={{ flexShrink: 1, minWidth: 0, color: onCardMuted, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {track.artist}
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-              {track?.video && <VideoButton onClick={e => { e.stopPropagation(); openVideo() }} />}
-              <LikeButton liked={liked} onToggle={() => setLiked(v => !v)} />
-            </div>
+              </span>
+              {track.album && (
+                <>
+                  <span aria-hidden style={{ flexShrink: 0, color: 'color-mix(in srgb, var(--neon-cyan) 55%, transparent)' }}>·</span>
+                  <span style={{ flexShrink: 2, minWidth: 0, color: 'rgba(255,255,255,0.42)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {track.album}
+                  </span>
+                </>
+              )}
+            </p>
           </div>
 
           {/* Transport — progress + controls, pinned to the bottom */}

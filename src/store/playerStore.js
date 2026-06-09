@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Howl, Howler } from 'howler'
+import { api } from '../lib/api'
 
 /* ── Global Howler config ─────────────────────────────────────────── */
 Howler.autoSuspend  = false   // never suspend AudioContext
@@ -52,7 +53,7 @@ export const usePlayerStore = create((set, get) => {
 
     setQueue(tracks) { set({ queue: tracks }) },
 
-    loadTrack(track) {
+    loadTrack(track, { autoplay = true } = {}) {
       const { howl, volume } = get()
 
       if (howl) { howl.stop(); howl.unload() }
@@ -69,6 +70,8 @@ export const usePlayerStore = create((set, get) => {
         return
       }
 
+      let streamCounted = false   // one stream per loaded track (not per resume)
+
       const newHowl = new Howl({
         src:   [track.src],
         html5: true,          // use HTML5 Audio so large MP3s stream
@@ -78,6 +81,11 @@ export const usePlayerStore = create((set, get) => {
         onplay() {
           set({ isPlaying: true, isPaused: false, audioError: null })
           startTick(get)
+          if (!streamCounted) {
+            streamCounted = true
+            // fire-and-forget; analytics must never disrupt playback
+            if (track.id) Promise.resolve(api.recordPlay(track.id)).catch(() => {})
+          }
         },
 
         onpause() {
@@ -135,7 +143,7 @@ export const usePlayerStore = create((set, get) => {
         queueIndex:   idx,
       })
 
-      newHowl.play()
+      if (autoplay) newHowl.play()
     },
 
     play() {

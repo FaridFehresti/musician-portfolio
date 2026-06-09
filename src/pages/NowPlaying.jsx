@@ -1,13 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../store/playerStore'
+import { useFavoritesStore } from '../store/favoritesStore'
 import { useAudioAnalyser } from '../hooks/useAudioAnalyser'
 import { CoverLightbox } from '../components/ui/CoverLightbox'
+import { ShareButton } from '../components/ui/ShareButton'
 import { HoloVinylCard } from '../components/vinyl/HoloVinylCard'
 import { DeckCard, CARD_W, CARD_H } from '../components/library/DeckCard'
 import { useBreakpoint } from '../hooks/useViewport'
 import { fmtDuration } from '../data/tracks'
 import { useContentStore } from '../store/contentStore'
+import { VisualizerBackground } from '../components/visualizer/VisualizerBackground'
 
 export default function NowPlaying() {
   const bp = useBreakpoint()
@@ -15,13 +18,30 @@ export default function NowPlaying() {
   const {
     currentTrack, isPlaying, isPaused,
     currentTime, duration, howl, volume,
-    play, pause, next, prev, seek, setVolume,
+    play, pause, next, prev, seek, setVolume, setQueue, loadTrack,
     shuffle, repeat, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
+  const allTracks = useContentStore(s => s.tracks)
 
   const { averageBass } = useAudioAnalyser(howl)
   const [lightbox, setLightbox] = useState(false)
   const [prevVol, setPrevVol] = useState(0.8)
+
+  // Audio-reactive galaxy background. `vizOn` is the user's keep/hide choice
+  // (persisted); `vizFull` expands it to a fullscreen visualizer.
+  const [vizOn, setVizOn] = useState(() => {
+    try { return localStorage.getItem('np-viz') !== 'off' } catch { return true }
+  })
+  const [vizFull, setVizFull] = useState(false)
+  useEffect(() => {
+    try { localStorage.setItem('np-viz', vizOn ? 'on' : 'off') } catch { /* ignore */ }
+  }, [vizOn])
+  useEffect(() => {
+    if (!vizFull) return
+    const onKey = (e) => { if (e.key === 'Escape') setVizFull(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [vizFull])
 
   function toggleMute() {
     if (volume === 0) { setVolume(prevVol || 0.8) }
@@ -33,8 +53,17 @@ export default function NowPlaying() {
   const glowAlpha = 0.08 + (averageBass / 255) * 0.2
 
   function togglePlay() {
-    if (isPlaying) pause()
-    else play()
+    if (currentTrack) {
+      if (isPlaying) pause()
+      else play()
+      return
+    }
+    // Nothing selected yet → select the first song and play it.
+    const library = allTracks.filter(t => t.inLibrary !== false)
+    if (library.length) {
+      setQueue(library)
+      loadTrack(library[0])   // loadTrack autoplays by default
+    }
   }
 
   return (
@@ -42,29 +71,58 @@ export default function NowPlaying() {
       className="min-h-screen flex flex-col items-center relative"
       style={{ background: 'var(--color-bg)', paddingTop: 88, paddingBottom: 130 }}
     >
-      {/* Ambient groove BG */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.05 }}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 600, repeat: Infinity, ease: 'linear' }}
-          style={{ width: 900, height: 900 }}
-        >
-          <svg viewBox="0 0 900 900">
-            {[420, 380, 340, 300, 260, 220, 180, 140, 100].map(r => (
-              <circle key={r} cx="450" cy="450" r={r} fill="none" stroke="color-mix(in srgb, var(--accent-2) 60%, transparent)" strokeWidth="0.8" />
-            ))}
-          </svg>
-        </motion.div>
-      </div>
+      {/* ── Background: the audio-reactive galaxy, or the original groove ── */}
+      {vizOn ? (
+        <>
+          <div style={{
+            position: 'fixed', inset: 0,
+            zIndex: vizFull ? 9999 : 0,
+            pointerEvents: vizFull ? 'auto' : 'none',
+            background: '#000',
+          }}>
+            <VisualizerBackground interactive={vizFull} />
+          </div>
+          {/* readability "layer" — a scrim over the galaxy so the UI stays legible
+              (only in background mode; fullscreen shows the pure visualizer) */}
+          {!vizFull && (
+            <div aria-hidden style={{
+              position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none',
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.2) 24%, rgba(0,0,0,0.24) 62%, rgba(0,0,0,0.68) 100%)',
+            }} />
+          )}
+        </>
+      ) : (
+        <>
+          {/* Ambient groove BG */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.05 }}>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 600, repeat: Infinity, ease: 'linear' }}
+              style={{ width: 900, height: 900 }}
+            >
+              <svg viewBox="0 0 900 900">
+                {[420, 380, 340, 300, 260, 220, 180, 140, 100].map(r => (
+                  <circle key={r} cx="450" cy="450" r={r} fill="none" stroke="color-mix(in srgb, var(--accent-2) 60%, transparent)" strokeWidth="0.8" />
+                ))}
+              </svg>
+            </motion.div>
+          </div>
 
-      {/* Bass-reactive spotlight */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 55% 45% at 50% 38%, color-mix(in srgb, var(--accent) ${(glowAlpha * 100).toFixed(1)}%, transparent) 0%, transparent 68%)`,
-          transition: 'background 0.1s ease',
-        }}
-      />
+          {/* Bass-reactive spotlight */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse 55% 45% at 50% 38%, color-mix(in srgb, var(--accent) ${(glowAlpha * 100).toFixed(1)}%, transparent) 0%, transparent 68%)`,
+              transition: 'background 0.1s ease',
+            }}
+          />
+        </>
+      )}
+
+      {/* ── Visualizer controls: hide/show + fullscreen ── */}
+      {!vizFull && (
+        <VizControls vizOn={vizOn} onToggle={() => setVizOn(v => !v)} onFull={() => setVizFull(true)} />
+      )}
 
       <div className="relative z-10 flex flex-col items-center gap-10 w-full max-w-2xl px-4">
 
@@ -116,9 +174,10 @@ export default function NowPlaying() {
                   {currentTrack.artist}
                   <span style={{ margin: '0 8px', opacity: 0.4 }}>·</span>
                   {currentTrack.genre}
-                  <span style={{ margin: '0 8px', opacity: 0.4 }}>·</span>
-                  {currentTrack.bpm} BPM
                 </p>
+                <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+                  <ShareButton track={currentTrack} label="Share track" title="Share this track" />
+                </div>
               </>
             ) : (
               <p style={{ color: 'var(--color-muted)', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22 }}>
@@ -229,6 +288,50 @@ export default function NowPlaying() {
         <QueueDeck />
       </div>
 
+      {/* ── Fullscreen visualizer chrome (over the interactive canvas) ── */}
+      {vizFull && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, pointerEvents: 'none' }}>
+          <div aria-hidden style={{ position: 'absolute', inset: 0, boxShadow: 'inset 0 0 220px 50px rgba(0,0,0,0.7)' }} />
+
+          {/* top bar: title + close */}
+          <div style={{ position: 'absolute', top: 20, left: 24, right: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 800, fontSize: 22, color: 'var(--color-text)', lineHeight: 1.1, textShadow: '0 0 30px var(--glow-magenta)' }}>
+                {currentTrack ? currentTrack.title : 'Resonance'}
+              </p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-muted)', marginTop: 4 }}>
+                {currentTrack ? currentTrack.artist : 'Audio-reactive'}
+              </p>
+            </div>
+            <button onClick={() => setVizFull(false)} aria-label="Exit fullscreen" title="Exit fullscreen (Esc)" style={{ ...iconBtnStyle, pointerEvents: 'auto' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" {...M_STROKE}><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </div>
+
+          {/* bottom transport */}
+          <div style={{ position: 'absolute', bottom: 34, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 18, pointerEvents: 'auto', padding: '10px 18px', borderRadius: 999, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)' }}>
+            <CtrlBtn onClick={prev}>
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3V3zm2 5l8-5v10L5 8z" /></svg>
+            </CtrlBtn>
+            <button onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'} style={{
+              width: 58, height: 58, borderRadius: '50%', cursor: 'pointer',
+              border: '2px solid var(--neon-magenta)',
+              background: isPlaying ? 'var(--neon-magenta)' : 'color-mix(in srgb, var(--neon-magenta) 14%, transparent)',
+              color: isPlaying ? 'var(--on-accent)' : 'var(--neon-magenta)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: isPlaying ? '0 0 24px var(--glow-magenta)' : 'none',
+            }}>
+              {isPlaying
+                ? <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3h2v10H5V3zm4 0h2v10H9V3z" /></svg>
+                : <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style={{ marginLeft: 3 }}><path d="M5 3.5l9 4.5-9 4.5V3.5z" /></svg>}
+            </button>
+            <CtrlBtn onClick={next}>
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M11 3h2v10h-2V3zm-2 5L1 3v10l8-5z" /></svg>
+            </CtrlBtn>
+          </div>
+        </div>
+      )}
+
       {/* Cover lightbox */}
       <AnimatePresence>
         {lightbox && currentTrack && (
@@ -238,6 +341,45 @@ export default function NowPlaying() {
     </div>
   )
 }
+
+/* ─── Visualizer controls: hide/show toggle + fullscreen ──────────────── */
+const iconBtnStyle = {
+  width: 40, height: 40, borderRadius: '50%',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', color: 'var(--color-text)',
+  background: 'color-mix(in srgb, var(--color-surface) 70%, transparent)',
+  border: '1px solid color-mix(in srgb, var(--text) 12%, transparent)',
+  backdropFilter: 'blur(8px)',
+}
+
+function VizControls({ vizOn, onToggle, onFull }) {
+  return (
+    <div style={{ position: 'fixed', top: 96, right: 16, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <button
+        onClick={onToggle}
+        aria-label={vizOn ? 'Hide visualizer' : 'Show visualizer'}
+        aria-pressed={vizOn}
+        title={vizOn ? 'Hide visualizer' : 'Show visualizer'}
+        style={{
+          ...iconBtnStyle,
+          color: vizOn ? 'var(--neon-magenta)' : 'var(--color-muted)',
+          borderColor: vizOn ? 'color-mix(in srgb, var(--neon-magenta) 45%, transparent)' : 'color-mix(in srgb, var(--text) 12%, transparent)',
+        }}
+      >
+        {vizOn ? <EyeSvg /> : <EyeOffSvg />}
+      </button>
+      {vizOn && (
+        <button onClick={onFull} aria-label="Fullscreen visualizer" title="Fullscreen visualizer" style={iconBtnStyle}>
+          <ExpandSvg />
+        </button>
+      )}
+    </div>
+  )
+}
+
+function EyeSvg() { return <svg width="18" height="18" viewBox="0 0 24 24" {...M_STROKE}><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg> }
+function EyeOffSvg() { return <svg width="18" height="18" viewBox="0 0 24 24" {...M_STROKE}><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M6.06 6.06A18.4 18.4 0 0 0 1 12s4 7 11 7a9.7 9.7 0 0 0 5.94-2.06M1 1l22 22" /></svg> }
+function ExpandSvg() { return <svg width="17" height="17" viewBox="0 0 24 24" {...M_STROKE}><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" /></svg> }
 
 /* ─── Control button ──────────────────────────────────────────────── */
 function CtrlBtn({ onClick, children }) {
@@ -296,32 +438,70 @@ function RepeatOneSvg() {
   )
 }
 
-/* ─── Suggestions deck ────────────────────────────────────────────────
-   Five random library tracks, held like a hand. The set is chosen ONCE
-   when the page mounts and stays put — picking a card plays it without
-   reshuffling. Desktop / tablet: an arced FAN — overlapping, rotated
-   cards; hovering a card nudges it up a little and brings it to the front
-   while it stays collided with the rest. Mobile: a centre-snap swipe
-   carousel (a fan of tall transport cards is unusable on a phone). */
-const SUGGEST_COUNT = 5
+/* ─── The hand of cards ───────────────────────────────────────────────
+   A hand of ALWAYS DECK_WINDOW (5) cards on Now Playing (clamped only by how
+   many tracks exist). The visitor's FAVORITES (hearted tracks) come FIRST,
+   then the hand is padded out with random library tracks — so the count never
+   drops below 5 just because you have few (or zero) favorites. With more than
+   5 in the pool the window slides as you advance (one card out the left, one
+   in the right, wrapping) anchored to the now-playing card. Playing a card
+   sets the pool as the player queue, so Next / Prev walk it and the window
+   follows. Desktop / tablet: an arced FAN. Mobile: a centre-snap swipe carousel. */
+const DECK_WINDOW = 5
 
-/* pick `n` distinct tracks at random, preserving their library index for the
-   card's rank chip. Computed once via useState initialiser, so it's stable. */
-function pickRandom(list, n) {
-  const idxs = list.map((_, i) => i)
-  for (let i = idxs.length - 1; i > 0; i--) {
+/* Fisher–Yates shuffle of a track list — a stable random ordering used to pad
+   the hand up to DECK_WINDOW (and the whole pool when nothing is liked). */
+function shuffleTracks(list) {
+  const a = list.slice()
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[idxs[i], idxs[j]] = [idxs[j], idxs[i]]
+    ;[a[i], a[j]] = [a[j], a[i]]
   }
-  return idxs.slice(0, Math.min(n, list.length)).map(i => ({ track: list[i], idx: i }))
+  return a
 }
 
 function QueueDeck() {
   const bp = useBreakpoint()
   const allTracks = useContentStore(s => s.tracks)
-  const tracks = useMemo(() => allTracks.filter(t => t.inLibrary !== false), [allTracks])
-  // stable random suggestions — only ever (re)generated on a fresh mount
-  const [cards] = useState(() => pickRandom(tracks, SUGGEST_COUNT))
+  const favIds    = useFavoritesStore(s => s.ids)
+  const currentId = usePlayerStore(s => s.currentTrack?.id)
+
+  const library = useMemo(() => allTracks.filter(t => t.inLibrary !== false), [allTracks])
+
+  // Liked tracks resolved to library tracks, in like-order. Drops likes whose
+  // track has since been unpublished / removed from the library.
+  const favTracks = useMemo(() => {
+    const byId = new Map(library.map(t => [t.id, t]))
+    return favIds.map(id => byId.get(id)).filter(Boolean)
+  }, [favIds, library])
+  const hasFavorites = favTracks.length > 0
+
+  // A stable random ordering of the library — pads the hand up to DECK_WINDOW
+  // and is the whole pool when nothing's liked. Re-shuffled only when the
+  // library changes (content load / CMS edit), NOT on every render or like
+  // toggle, so the hand stays put. (Starts empty; content arrives after mount.)
+  const [shuffledLib, setShuffledLib] = useState(() => shuffleTracks(library))
+  useEffect(() => { setShuffledLib(shuffleTracks(library)) }, [library])
+
+  // The pool: FAVORITES first, then the rest of the shuffled library. The
+  // window is ALWAYS DECK_WINDOW cards (clamped only by how many tracks exist),
+  // so the count never drops below 5 just because you have few favorites.
+  const pool = useMemo(() => {
+    const favSet = new Set(favTracks.map(t => t.id))
+    return [...favTracks, ...shuffledLib.filter(t => !favSet.has(t.id))]
+  }, [favTracks, shuffledLib])
+
+  // Fixed-size window anchored to the now-playing card; slides with wraparound.
+  const cards = useMemo(() => {
+    const N = pool.length
+    if (!N) return []
+    const visible = Math.min(N, DECK_WINDOW)
+    const anchor  = Math.max(0, pool.findIndex(t => t.id === currentId))
+    return Array.from({ length: visible }, (_, k) => {
+      const i = (anchor + k) % N
+      return { track: pool[i], idx: i }
+    })
+  }, [pool, currentId])
 
   if (!cards.length) return null
 
@@ -331,16 +511,17 @@ function QueueDeck() {
     <div className="w-full">
       <div className="flex items-baseline justify-between mb-1">
         <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-          Suggestions
+          {hasFavorites ? 'Favorites' : 'Suggestions'}
         </p>
         <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', opacity: 0.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           {cards.length} picks · {isMobile ? 'swipe ›' : 'hover · pick ›'}
         </p>
       </div>
 
+      {/* Playing a card sets the pool as the player queue, so Next / Prev walk it. */}
       {isMobile
-        ? <QueueCarousel cards={cards} allTracks={tracks} />
-        : <QueueFan cards={cards} allTracks={tracks} scale={bp === 'tablet' ? 0.58 : 0.66} />}
+        ? <QueueCarousel cards={cards} allTracks={pool} />
+        : <QueueFan cards={cards} allTracks={pool} scale={bp === 'tablet' ? 0.58 : 0.66} />}
     </div>
   )
 }
@@ -366,12 +547,12 @@ function QueueFan({ cards, scale, allTracks }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 26 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       style={{ position: 'relative', width: fanW, height: h + 56, margin: '0 auto', marginTop: 6 }}
       onMouseLeave={() => setHover(null)}
     >
+      <AnimatePresence>
       {cards.map(({ track, idx }, i) => {
         const t = i - mid
         const isUp = hover === i
@@ -386,6 +567,7 @@ function QueueFan({ cards, scale, allTracks }) {
             onMouseEnter={() => setHover(i)}
             initial={{ opacity: 0, y: 70 }}
             animate={{ opacity: 1, x: t * stepX, y: dropAt(t), rotate: t * perDeg }}
+            exit={{ opacity: 0, y: 64, scale: 0.9, transition: { duration: 0.22 } }}
             transition={{ ...FAN_SPRING, delay: hover === null ? 0.05 * i : 0 }}
             style={{
               position: 'absolute', top: 40, left: `calc(50% - ${w / 2}px)`,
@@ -405,6 +587,7 @@ function QueueFan({ cards, scale, allTracks }) {
           </motion.div>
         )
       })}
+      </AnimatePresence>
     </motion.div>
   )
 }

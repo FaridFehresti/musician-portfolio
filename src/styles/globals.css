@@ -220,66 +220,81 @@ body {
   transition: opacity 0.4s ease;
 }
 
-/* 0 — glass light: a soft lit film tracking the pointer, giving the foil a
-   luminous base so the holographic colour reads on dark cover art. */
+/* No color-dodge anywhere (it divides-to-white on bright album pixels and was
+   the source of the old neon/white wash). screen / plus-lighter / soft-light
+   only — all clamp at white. Everything is gated on --hyp so the foil is faint
+   at rest (pointer centred) and BLOOMS as the pointer sweeps; the
+   .holo-foil-layer 0.4s opacity transition gives the fade-in on hover. */
+
+/* 0 — glass base reflection: broad, soft, slightly-cool lit film = the body of
+   the glass pane. screen is safe on dark art (caps per channel at white). */
 .holo-light-spot {
   mix-blend-mode: screen;
   background: radial-gradient(
-    62% 62% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
-    rgba(255, 255, 255, 0.3) 0%,
-    rgba(176, 224, 255, 0.13) 38%,
-    transparent 72%
+    68% 68% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
+    rgba(216, 234, 255, 0.2) 0%,
+    rgba(150, 196, 255, 0.09) 42%,
+    transparent 74%
   );
-  opacity: calc(0.32 + 0.45 * var(--hyp));
+  opacity: calc(0.1 + 0.4 * var(--hyp));
 }
 
-/* 1 — colour-shift foil: neon rainbow that sweeps with the pointer */
+/* 1 — holographic tint: a faint oily rainbow that only reads as you move.
+   plus-lighter (additive, hue-preserving, self-limiting) keeps the colour
+   COLOURED instead of washing neon-white. Wide gentle stops = no hard bands;
+   squared --hyp = near-invisible at rest, grows on sweep. */
 .holo-foil-color {
-  mix-blend-mode: color-dodge;
+  mix-blend-mode: plus-lighter;
   background-image: repeating-linear-gradient(
     115deg,
-    var(--foil-1) 0%, var(--foil-2) 8%, var(--foil-3) 16%,
-    var(--foil-1) 24%, var(--foil-2) 32%, var(--foil-3) 40%
+    var(--foil-1) 0%, var(--foil-2) 14%, var(--foil-3) 28%,
+    var(--foil-1) 42%, var(--foil-2) 56%, var(--foil-3) 70%
   );
-  background-size: 280% 280%;
+  background-size: 320% 320%;
   background-position: calc(var(--posx) * 1%) calc(var(--posy) * 1%);
-  opacity: calc(0.9 * var(--holo) * (0.45 + 0.55 * var(--hyp)));
+  opacity: calc(0.18 * var(--holo) * (0.08 + 0.92 * var(--hyp) * var(--hyp)));
 }
 
-/* 2 — glints: steep white interference bands (the holographic "lines") */
+/* 2 — soft glass sheen (REPLACES the old white interference streak): ONE wide,
+   low-alpha diagonal band on soft-light, tracking the pointer. No repeating
+   hard lines, and multiplied by BARE var(--hyp) (no floor) → literally zero at
+   rest, so the streak can never re-appear. */
 .holo-foil-glint {
-  mix-blend-mode: overlay;
-  background-image: repeating-linear-gradient(
+  mix-blend-mode: soft-light;
+  background-image: linear-gradient(
     -48deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.4) 6%,
-    rgba(255, 255, 255, 0) 13%
+    transparent 32%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 68%
   );
-  background-size: 220% 220%;
-  background-position: calc(var(--posy) * -1.2%) calc(var(--posx) * 1.2%);
-  opacity: calc(0.4 * var(--holo) * (0.2 + 0.6 * var(--hyp)));
+  background-size: 260% 260%;
+  background-position: calc(var(--posy) * -1%) calc(var(--posx) * 1%);
+  opacity: calc(0.32 * var(--holo) * var(--hyp));
 }
 
-/* 3 — sparkle: SVG noise punched into bright dots; parallaxes with pointer.
-   background-image (the data-URI) is set inline by the component. */
+/* 3 — sparkle whisper: fine dust in the glass, only near the cursor. screen
+   (NOT color-dodge) so the near-white SVG dots can't divide-to-white on bright
+   pixels. background-image (the data-URI) is set inline by the component. */
 .holo-foil-sparkle {
-  mix-blend-mode: color-dodge;
+  mix-blend-mode: screen;
   background-size: 170px 170px;
   background-position: calc(var(--mx) * 1.4px) calc(var(--my) * 1.4px);
-  opacity: calc(0.85 * var(--holo) * (0.15 + 0.85 * var(--hyp)));
+  opacity: calc(0.4 * var(--holo) * (0.04 + 0.96 * var(--hyp) * var(--hyp)));
 }
 
-/* 4 — specular: a hot white hotspot at the pointer = the 3D light catching
-   the glass surface. */
+/* 4 — hero specular hotspot: the single brightest cue = glass catching light.
+   Small, soft, slightly-cool, glides exactly under the pointer. A small floor
+   makes the catch present the instant you hover, then it blooms with --hyp and
+   fades to nothing at the edges. Tight radius = a crisp reflection, not a band. */
 .holo-spec {
   mix-blend-mode: screen;
   background: radial-gradient(
-    22% 22% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(255, 255, 255, 0.14) 36%,
-    transparent 64%
+    17% 17% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
+    rgba(240, 248, 255, 0.5) 0%,
+    rgba(210, 230, 255, 0.12) 36%,
+    transparent 62%
   );
-  opacity: calc(0.3 + 0.4 * var(--hyp));
+  opacity: calc(0.2 + 0.48 * var(--hyp));
 }
 
 @media (prefers-reduced-motion: reduce) {

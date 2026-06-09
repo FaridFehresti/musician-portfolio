@@ -30,7 +30,6 @@ db.exec(`
     artist     TEXT DEFAULT '',
     album      TEXT DEFAULT '',
     genre      TEXT DEFAULT '',
-    bpm        INTEGER DEFAULT 0,
     duration   REAL DEFAULT 0,
     year       INTEGER DEFAULT 0,
     src        TEXT DEFAULT '',
@@ -51,6 +50,20 @@ db.exec(`
   if (!cols.includes('homeSlot')) db.exec("ALTER TABLE tracks ADD COLUMN homeSlot TEXT DEFAULT ''")
 }
 
+/* Stream log — one row per play. Additive (CREATE … IF NOT EXISTS), so it
+   appears on the next server start without touching existing track/settings
+   data. `bpm` was retired from the track schema above; databases created
+   earlier keep the now-unused column harmlessly (no destructive DROP). */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS plays (
+    id      INTEGER PRIMARY KEY,
+    trackId TEXT NOT NULL,
+    ts      INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_plays_trackId ON plays(trackId);
+  CREATE INDEX IF NOT EXISTS idx_plays_ts ON plays(ts);
+`)
+
 /* ── Settings (JSON blobs) ─────────────────────────────────────────── */
 const getSettingStmt = db.prepare('SELECT value FROM settings WHERE key = ?')
 const setSettingStmt = db.prepare(
@@ -70,7 +83,7 @@ export function setSetting(key, value) {
 
 /* ── Tracks ────────────────────────────────────────────────────────── */
 const TRACK_COLS = [
-  'id', 'title', 'artist', 'album', 'genre', 'bpm', 'duration', 'year',
+  'id', 'title', 'artist', 'album', 'genre', 'duration', 'year',
   'src', 'coverArt', 'video', 'inHero', 'inFeatured', 'inLibrary', 'published', 'homeSlot', 'sort',
 ]
 const BOOL_COLS = new Set(['inHero', 'inFeatured', 'inLibrary', 'published'])
@@ -99,7 +112,7 @@ function coerce(track) {
   for (const c of TRACK_COLS) {
     let v = track[c]
     if (BOOL_COLS.has(c)) v = v ? 1 : 0
-    else if (c === 'bpm' || c === 'year') v = Number.isFinite(+v) ? Math.round(+v) : 0
+    else if (c === 'year') v = Number.isFinite(+v) ? Math.round(+v) : 0
     else if (c === 'duration' || c === 'sort') v = Number.isFinite(+v) ? +v : 0
     else v = v == null ? '' : String(v)
     out[c] = v
@@ -126,6 +139,62 @@ export function deleteTrack(id) {
 export function nextSort() {
   const row = db.prepare('SELECT MAX(sort) AS m FROM tracks').get()
   return (row?.m ?? -1) + 1
+}
+
+/* ── Streams / analytics ───────────────────────────────────────────── */
+const insertPlayStmt = db.prepare('INSERT INTO plays (trackId, ts) VALUES (?, ?)')
+
+/* Log one stream. `ts` is epoch ms (defaults to now). */
+export function recordPlay(trackId, ts = Date.now()) {
+  insertPlayStmt.run(String(trackId), Math.round(ts))
+}
+
+/* Dashboard payload: all-time + windowed totals, per-track breakdown (joined
+   to live track metadata), and a gap-filled daily series for the chart. */
+export function getAnalytics({ days = 30 } = {}) {
+  const safeDays = Math.min(365, Math.max(1, Math.round(days) || 30))
+  const total = db.prepare('SELECT COUNT(*) AS n FROM plays').get().n
+
+  const byId = new Map(listTracks().map(t => [t.id, t]))
+  const perTrack = db.prepare(`
+    SELECT trackId, COUNT(*) AS streams, MAX(ts) AS lastPlayed
+    FROM plays GROUP BY trackId ORDER BY streams DESC, lastPlayed DESC
+  `).all().map(r => {
+    const t = byId.get(r.trackId)
+    return {
+      id: r.trackId,
+      title:    t?.title  || '(deleted track)',
+      artist:   t?.artist || '',
+      coverArt: t?.coverArt || '',
+      exists:   !!t,
+      streams:  r.streams,
+      lastPlayed: r.lastPlayed,
+    }
+  })
+
+  const since = Date.now() - (safeDays - 1) * 86400000
+  const rows = db.prepare(`
+    SELECT strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(*) AS streams
+    FROM plays WHERE ts >= ? GROUP BY day
+  `).all(since)
+  const byDay = new Map(rows.map(r => [r.day, r.streams]))
+
+  const daily = []
+  const cursor = new Date(since)
+  for (let i = 0; i < safeDays; i++) {
+    const key = cursor.toISOString().slice(0, 10)
+    daily.push({ day: key, streams: byDay.get(key) || 0 })
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+
+  return {
+    total,
+    days: safeDays,
+    windowStreams: daily.reduce((a, d) => a + d.streams, 0),
+    tracksPlayed: perTrack.length,
+    perTrack,
+    daily,
+  }
 }
 
 /* ── First-run seed ──────────────────────────────────────────────────

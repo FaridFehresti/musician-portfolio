@@ -5,11 +5,13 @@ import { useThemeStore } from '../../store/themeStore'
 import { Btn } from './ui'
 import { BrandingSection } from './BrandingSection'
 import { MusicSection } from './MusicSection'
+import { AnalyticsSection } from './AnalyticsSection'
 import { AboutSection, SocialsSection, LinksSection, DonationSection } from './ContentSection'
 
 const TABS = [
   ['branding', 'Branding'],
   ['music', 'Music'],
+  ['analytics', 'Analytics'],
   ['about', 'About'],
   ['links', 'Socials & Links'],
   ['donate', 'Donations'],
@@ -100,7 +102,8 @@ export default function AdminApp() {
           : (
             <>
               {tab === 'branding' && <BrandingSection site={content.site} onSaved={onSaved} />}
-              {tab === 'music' && <MusicSection onChanged={() => useContentStore.getState().load()} />}
+              {tab === 'music' && <MusicSection site={content.site} onSaved={onSaved} onChanged={() => useContentStore.getState().load()} />}
+              {tab === 'analytics' && <AnalyticsSection />}
               {tab === 'about' && <AboutSection about={content.about} onSaved={onSaved} />}
               {tab === 'links' && (
                 <>

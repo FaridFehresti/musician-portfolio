@@ -7,7 +7,7 @@ import { HOME_SLOTS } from '../../lib/homeSlots'
    until "Save". */
 
 const BLANK = {
-  title: '', artist: '', album: '', genre: '', bpm: 0, year: 0,
+  title: '', artist: '', album: '', genre: '', year: 0,
   video: '', src: '', coverArt: '',
   homeSlot: '', inFeatured: true, inLibrary: true, published: true,
 }
@@ -53,7 +53,6 @@ export function TrackModal({ track, onClose, onSaved }) {
             <Text label="Artist" value={d.artist} onChange={v => set({ artist: v })} />
             <Text label="Album" value={d.album} onChange={v => set({ album: v })} />
             <Text label="Genre" value={d.genre} onChange={v => set({ genre: v })} hint="Used by the library filters." />
-            <Text label="BPM" type="number" value={d.bpm} onChange={v => set({ bpm: Number(v) || 0 })} />
             <Text label="Year" type="number" value={d.year} onChange={v => set({ year: Number(v) || 0 })} />
           </div>
           <Text label="Music video URL (optional)" value={d.video} onChange={v => set({ video: v })} placeholder="https://youtube.com/watch?v=…" />

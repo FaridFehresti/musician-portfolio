@@ -10,6 +10,7 @@ export const DEFAULT_SITE = {
   logoUrl: null,
   logoHeight: 90,            // px height of the logo in the hero (when set)
   youtubeUrl: '',            // channel URL → "Go to YouTube" button in Videos section
+  homeSlots: {},             // optional genre label per home deck pile, keyed by slot ('stack-1'…'fan-3')
 }
 
 export const DEFAULT_ABOUT = {
@@ -36,16 +37,14 @@ export const DEFAULT_LINKS = []
 
 export const DEFAULT_DONATION = {
   heading: 'Support the Music',
-  subtext: 'All music is free. If you enjoy it, a small tip keeps the studio running.',
-  amounts: ['$3', '$5', '$10'],
-  kofiUrl: 'https://ko-fi.com',
-  kofiLabel: '☕ Buy a Coffee on Ko-fi',
-  paypalUrl: 'https://paypal.me',
-  paypalLabel: 'PayPal.me',
+  subtext: 'All music here is free. If it added something to your day, you can leave a tip — pay what you like, it all goes straight back into the studio.',
+  checkyaUrl: '',                                    // your Checkya tip / payment link
+  buttonLabel: 'Leave a tip',
+  note: 'Secure checkout via Checkya — no account needed.',
   why: [
     { icon: '🎙', title: 'Better equipment', text: 'Better mics, converters, and monitors mean better music.' },
     { icon: '🎵', title: 'More music',       text: 'Every tip goes directly back into studio time and releases.' },
-    { icon: '∞',  title: 'Keep it free',     text: 'Your support means the music stays free for everyone, forever.' },
+    { icon: '∞',  title: 'Keep it free',     text: 'Your support keeps the music free for everyone, forever.' },
   ],
 }
 

@@ -119,6 +119,7 @@ export default function Home() {
           {/* Artist name — replaced by the uploaded logo when one is set */}
           {site.logoUrl ? (
             <motion.img
+              data-brand-logo
               src={site.logoUrl}
               alt={site.artistName || 'Logo'}
               variants={FADE_UP} initial="hidden" animate="visible" custom={0}
@@ -133,6 +134,7 @@ export default function Home() {
             />
           ) : (
             <motion.h1
+              data-brand-logo
               variants={FADE_UP} initial="hidden" animate="visible" custom={0}
               style={{
                 fontFamily:  'var(--font-display)',

@@ -16,6 +16,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
   getSetting, setSetting, listTracks, getTrack, upsertTrack, deleteTrack, nextSort,
+  recordPlay, getAnalytics,
 } from './db.js'
 import {
   DEFAULT_SITE, DEFAULT_ABOUT, DEFAULT_SOCIALS, DEFAULT_LINKS, DEFAULT_DONATION,
@@ -41,7 +42,13 @@ function loadEnv() {
 }
 loadEnv()
 
-const PORT = process.env.PORT || 3001
+// `--port N` (CLI arg) wins over PORT (env). Dev passes it so the API stays on
+// 3001 — matching Vite's hardcoded /api proxy — even when a launcher injects
+// PORT (e.g. set to Vite's own port). Production (`node server/index.js`, pm2)
+// passes no arg and keeps using PORT || 3001.
+const portArgIndex = process.argv.indexOf('--port')
+const PORT =
+  (portArgIndex !== -1 && process.argv[portArgIndex + 1]) || process.env.PORT || 3001
 const ADMIN_USER = process.env.ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.ADMIN_PASS || 'changeme'
 const SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me'
@@ -69,7 +76,8 @@ const storage = multer.diskStorage({
     cb(null, `${randomUUID()}${ext}`)
   },
 })
-const upload = multer({ storage, limits: { fileSize: 80 * 1024 * 1024 } })
+const MAX_UPLOAD_MB = 250
+const upload = multer({ storage, limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 } })
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }))
 
@@ -124,6 +132,17 @@ app.get('/api/content', (_req, res) => {
   res.json(buildContent())
 })
 
+/* ── Public: log a stream ──────────────────────────────────────────────
+   Visitors POST here when a track starts playing. We only count plays of a
+   known, published track so the log can't be stuffed with junk ids. */
+app.post('/api/plays', (req, res) => {
+  const id = String(req.body?.trackId || '')
+  const t = getTrack(id)
+  if (!t || !t.published) return res.status(204).end()
+  recordPlay(id)
+  res.status(204).end()
+})
+
 /* ── Admin: settings ───────────────────────────────────────────────── */
 const SECTION_DEFAULTS = {
   site: DEFAULT_SITE, about: DEFAULT_ABOUT, socials: DEFAULT_SOCIALS,
@@ -155,6 +174,11 @@ app.get('/api/admin/tracks', requireAuth, (_req, res) => {
   res.json(listTracks())
 })
 
+/* ── Admin: analytics ──────────────────────────────────────────────── */
+app.get('/api/admin/analytics', requireAuth, (req, res) => {
+  res.json(getAnalytics({ days: Number(req.query.days) || 30 }))
+})
+
 app.post('/api/admin/tracks', requireAuth, (req, res) => {
   const t = req.body || {}
   let id = t.id ? slugify(t.id) : slugify(`${t.artist || ''}-${t.title || ''}`)
@@ -164,7 +188,7 @@ app.post('/api/admin/tracks', requireAuth, (req, res) => {
   const saved = upsertTrack({
     id: unique,
     title: t.title || 'Untitled', artist: t.artist || '', album: t.album || '',
-    genre: t.genre || '', bpm: t.bpm || 0, duration: t.duration || 0, year: t.year || 0,
+    genre: t.genre || '', duration: t.duration || 0, year: t.year || 0,
     src: t.src || '', coverArt: t.coverArt || '', video: t.video || '',
     inHero: t.inHero ?? true, inFeatured: t.inFeatured ?? true, inLibrary: t.inLibrary ?? true,
     homeSlot: t.homeSlot || '', published: t.published ?? true, sort: nextSort(),
@@ -217,24 +241,38 @@ export function headTags(req) {
   const site = getSetting('site', DEFAULT_SITE)
   const base = publicBase(req)
   const name = site.artistName || 'Artist'
-  const title = `${name} — Music`
-  const desc = site.tagline || 'Listen free — no account, no subscription.'
-  const logo = site.logoUrl ? base + site.logoUrl : ''
+
+  // Shareable track permalinks (/track/:id) unfurl with the track's own title
+  // + cover art; every other route uses the site-wide branding.
+  const m = (req.path || req.originalUrl || '').match(/^\/track\/([^/?#]+)/)
+  const track = m ? getTrack(decodeURIComponent(m[1])) : null
+
+  const title = track
+    ? `${track.title}${track.artist ? ` — ${track.artist}` : ''} · ${name}`
+    : `${name} — Music`
+  const desc = track
+    ? `Listen to ${track.title}${track.artist ? ` by ${track.artist}` : ''} — free, no account needed.`
+    : (site.tagline || 'Listen free — no account, no subscription.')
+
+  const abs = (p) => (p ? (/^https?:\/\//i.test(p) ? p : base + p) : '')
+  const favicon  = site.logoUrl || ''                      // tab icon stays the logo
+  const shareImg = abs(track?.coverArt || site.logoUrl)    // social card image
+  const ogType   = track ? 'music.song' : 'website'
   const url = base + (req.originalUrl || '/')
   return [
     `<title>${esc(title)}</title>`,
     `<meta name="description" content="${esc(desc)}" />`,
-    logo && `<link rel="icon" href="${esc(site.logoUrl)}" />`,
-    `<meta property="og:type" content="website" />`,
+    favicon && `<link rel="icon" href="${esc(favicon)}" />`,
+    `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:site_name" content="${esc(name)}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(desc)}" />`,
     `<meta property="og:url" content="${esc(url)}" />`,
-    logo && `<meta property="og:image" content="${esc(logo)}" />`,
-    `<meta name="twitter:card" content="${logo ? 'summary_large_image' : 'summary'}" />`,
+    shareImg && `<meta property="og:image" content="${esc(shareImg)}" />`,
+    `<meta name="twitter:card" content="${shareImg ? 'summary_large_image' : 'summary'}" />`,
     `<meta name="twitter:title" content="${esc(title)}" />`,
     `<meta name="twitter:description" content="${esc(desc)}" />`,
-    logo && `<meta name="twitter:image" content="${esc(logo)}" />`,
+    shareImg && `<meta name="twitter:image" content="${esc(shareImg)}" />`,
   ].filter(Boolean).join('\n    ')
 }
 export function renderIndex(html, req) {
@@ -256,6 +294,9 @@ if (existsSync(join(DIST, 'index.html'))) {
 }
 
 app.use((err, _req, res, _next) => {
+  if (err?.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: `File is too large (max ${MAX_UPLOAD_MB} MB).` })
+  }
   console.error('[api] error:', err?.message || err)
   res.status(err?.status || 500).json({ error: err?.message || 'server error' })
 })

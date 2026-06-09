@@ -1,18 +1,18 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PlayerBar } from './components/player/PlayerBar'
 import { Nav }       from './components/ui/Nav'
+import { LoadingScreen } from './components/ui/LoadingScreen'
 import { useContentStore } from './store/contentStore'
 import Home       from './pages/Home'
 import Library    from './pages/Library'
 import NowPlaying from './pages/NowPlaying'
+import Track      from './pages/Track'
 import About      from './pages/About'
 import Donate     from './pages/Donate'
 import Videos     from './pages/Videos'
 
-// Lazy-loaded so Three.js + the /lab bundle stay out of the main chunk.
-const Lab = lazy(() => import('./pages/Lab'))
 // Admin CMS — lazy so its bundle never touches the public site.
 const AdminApp = lazy(() => import('./pages/admin/AdminApp'))
 
@@ -31,14 +31,10 @@ function AnimatedRoutes() {
           <Route path="/"            element={<Home />} />
           <Route path="/library"     element={<Library />} />
           <Route path="/now-playing" element={<NowPlaying />} />
+          <Route path="/track/:id"   element={<Track />} />
           <Route path="/videos"      element={<Videos />} />
           <Route path="/about"       element={<About />} />
           <Route path="/donate"      element={<Donate />} />
-          <Route path="/lab"         element={
-            <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>
-              <Lab />
-            </Suspense>
-          } />
           <Route path="/admin/*"     element={
             <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>
               <AdminApp />
@@ -50,10 +46,14 @@ function AnimatedRoutes() {
   )
 }
 
-// Hides the global chrome on /lab (immersive) and /admin (its own layout).
+// Hides the global chrome on /admin (it has its own layout).
 function Shell() {
   const { pathname } = useLocation()
-  const immersive = pathname === '/lab' || pathname.startsWith('/admin')
+  const immersive = pathname.startsWith('/admin')
+
+  // Boot splash — runs once on first load, never on later client navigation.
+  // Skipped on immersive routes (admin), which have their own chrome.
+  const [booting, setBooting] = useState(() => !immersive)
 
   // Pull the live CMS content once on first load (falls back to the static
   // catalog + defaults if the API isn't running).
@@ -64,6 +64,9 @@ function Shell() {
       {!immersive && <Nav />}
       <AnimatedRoutes />
       {!immersive && <PlayerBar />}
+      {booting && !immersive && (
+        <LoadingScreen isHome={pathname === '/'} onFinish={() => setBooting(false)} />
+      )}
     </>
   )
 }

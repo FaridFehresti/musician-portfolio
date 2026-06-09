@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
-import { Panel, Toggle, Btn } from './ui'
+import { Panel, Toggle, Btn, Saver } from './ui'
+import { useEditor } from './useEditor'
 import { HOME_SLOTS, groupBySlot } from '../../lib/homeSlots'
 import { TrackModal } from './TrackModal'
 
 /* Music manager — add/edit tracks in a modal form, see the home deck
    arrangement at a glance, and assign each track to a home slot. */
-export function MusicSection({ onChanged }) {
+export function MusicSection({ site, onSaved, onChanged }) {
   const [tracks, setTracks] = useState(null)
   const [modal, setModal] = useState(null)   // null | 'new' | trackObject
   const [stale, setStale] = useState(false)  // server silently ignored a field
+
+  // Genre label per home pile (stored in site.homeSlots) — its own draft + save.
+  const slots = useEditor('site', site, onSaved)
+  const slotLabels = slots.draft.homeSlots || {}
+  const setSlotLabel = (key, val) => slots.set({ homeSlots: { ...slotLabels, [key]: val } })
 
   useEffect(() => { api.getTracks().then(setTracks).catch(() => setTracks([])) }, [])
 
@@ -71,7 +77,8 @@ export function MusicSection({ onChanged }) {
 
       <Panel
         title="Home deck arrangement"
-        desc="This is exactly how the home card piles are filled. Drag isn’t needed — set each track’s pile from the list below, or in its editor."
+        desc="This is exactly how the home card piles are filled. Drag isn’t needed — set each track’s pile from the list below, or in its editor. Give a pile a genre name to label it on the home page."
+        actions={<Saver onSave={slots.save} dirty={slots.dirty} saving={slots.saving} savedAt={slots.savedAt} />}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {HOME_SLOTS.map(s => (
@@ -87,6 +94,18 @@ export function MusicSection({ onChanged }) {
                   padding: '2px 7px', borderRadius: 999,
                 }}>{s.kind}</span>
               </div>
+              <input
+                value={slotLabels[s.key] || ''}
+                onChange={e => setSlotLabel(s.key, e.target.value)}
+                placeholder="Genre label (optional)"
+                aria-label={`${s.label} genre label`}
+                style={{
+                  width: '100%', marginBottom: 8, padding: '6px 9px', borderRadius: 8,
+                  background: 'var(--color-surface)', color: 'var(--color-text)',
+                  border: '1px solid color-mix(in srgb, var(--text) 14%, transparent)',
+                  fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none',
+                }}
+              />
               {bySlot[s.key].length === 0
                 ? <p style={{ color: 'var(--color-muted)', fontSize: 12, opacity: 0.6 }}>empty</p>
                 : (
