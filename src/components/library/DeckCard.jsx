@@ -261,7 +261,7 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
               long "artist · album" isn't squeezed into a double ellipsis. */}
           <div style={{ marginTop: 12, textAlign: 'center' }}>
             <p style={{
-              margin: 0, paddingLeft: 46, paddingRight: 46,
+              margin: 0, paddingLeft: 46, paddingRight: track?.video ? 74 : 50,
               fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
               fontSize: 17, lineHeight: '21px', color: accent,
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
