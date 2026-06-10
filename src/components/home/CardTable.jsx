@@ -38,6 +38,11 @@ export function CardTable({ tracks }) {
   const { bySlot, ordered, startIndex } = groupBySlot(tracks)
   const stackSlots = HOME_SLOTS.filter(s => s.kind === 'stack')
   const fanSlots   = HOME_SLOTS.filter(s => s.kind === 'fan')
+  // Bottom-row fan piles that actually have cards. When EXACTLY ONE is present,
+  // it's dealt as a centered "held hand" arc (like Now Playing) instead of the
+  // spread-on-hover CardFan; 2+ piles keep CardFan unchanged.
+  const fansWithCards = fanSlots.filter(s => bySlot[s.key].length)
+  const singleFan = fansWithCards.length === 1
 
   // Only ONE stack is spread at a time: the one holding the playing track.
   // Playing a card in another stack moves the active key here, so the previous
@@ -80,11 +85,14 @@ export function CardTable({ tracks }) {
                 ))}
               </div>
 
-              {/* Bottom row: fans */}
+              {/* Bottom row: fans. A lone fan pile is dealt as a centered
+                  Now-Playing-style "held hand"; 2+ keep the spread-on-hover fan. */}
               <div style={{ display: 'flex', gap: 'clamp(16px, 4vw, 60px)', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                {fanSlots.filter(s => bySlot[s.key].length).map(s => (
+                {fansWithCards.map(s => (
                   <PileColumn key={s.key} label={slotLabels[s.key]} reserve={fanSlots.some(x => bySlot[x.key].length && slotLabels[x.key])}>
-                    <CardFan tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={0.62} currentTrack={currentTrack} />
+                    {singleFan
+                      ? <HeldHandFan tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={0.62} currentTrack={currentTrack} />
+                      : <CardFan     tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={0.62} currentTrack={currentTrack} />}
                   </PileColumn>
                 ))}
               </div>
@@ -111,16 +119,18 @@ function DeckToolbar({ onShuffle }) {
     <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
       <motion.button
         onClick={onShuffle}
-        whileHover={{ scale: 1.05, backgroundColor: 'color-mix(in srgb, var(--accent) 16%, transparent)' }}
+        whileHover={{ scale: 1.05, boxShadow: '0 0 26px color-mix(in srgb, var(--neon-magenta) 48%, transparent), inset 0 0 0 1px rgba(255,255,255,0.08)' }}
         whileTap={{ scale: 0.96 }}
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 9, padding: '9px 18px',
-          borderRadius: 999, cursor: 'pointer',
-          border: '1px solid color-mix(in srgb, var(--neon-magenta) 55%, transparent)',
-          background: 'color-mix(in srgb, var(--neon-magenta) 8%, transparent)',
+          display: 'inline-flex', alignItems: 'center', gap: 9, padding: '10px 20px',
+          borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+          border: '1px solid color-mix(in srgb, var(--neon-magenta) 60%, transparent)',
+          // dark glass backing so the control never disappears over bright cover art
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--neon-magenta) 16%, rgba(8,5,16,0.82)) 0%, rgba(8,5,16,0.88) 100%)',
           color: 'var(--neon-magenta)', fontFamily: 'var(--font-mono)', fontSize: 11,
           letterSpacing: '0.14em', textTransform: 'uppercase',
-          boxShadow: '0 0 18px color-mix(in srgb, var(--neon-magenta) 22%, transparent)',
+          boxShadow: '0 0 18px color-mix(in srgb, var(--neon-magenta) 26%, transparent), inset 0 0 0 1px rgba(255,255,255,0.06)',
+          textShadow: '0 0 10px color-mix(in srgb, var(--neon-magenta) 55%, transparent)',
         }}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -143,10 +153,16 @@ function PileColumn({ label, reserve, children }) {
         <span
           aria-hidden={!label}
           style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase',
-            color: 'var(--color-accent)', whiteSpace: 'nowrap', padding: '4px 13px', borderRadius: 999,
-            background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--accent) 32%, transparent)',
+            // sit above the cards (z) + keep clear (marginBottom) so the card's
+            // hover-lift can't ride up and clip the label.
+            position: 'relative', zIndex: 2, marginBottom: 16,
+            fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase',
+            color: 'var(--color-accent)', whiteSpace: 'nowrap', padding: '5px 14px', borderRadius: 999,
+            // dark glass backing so the pill never disappears over bright art
+            background: 'rgba(8,5,16,0.8)',
+            border: '1px solid color-mix(in srgb, var(--accent) 48%, transparent)',
+            boxShadow: '0 0 14px color-mix(in srgb, var(--accent) 22%, transparent), inset 0 0 0 1px rgba(255,255,255,0.05)',
+            textShadow: '0 0 8px color-mix(in srgb, var(--accent) 38%, transparent)',
             visibility: label ? 'visible' : 'hidden',
           }}
         >
@@ -260,6 +276,72 @@ function CardFan({ tracks, allTracks, startIndex, baseScale, currentTrack }) {
             <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${baseScale})`, transformOrigin: 'top left' }}>
               <DeckCard track={track} index={startIndex + i} allTracks={allTracks} />
             </div>
+          </motion.div>
+        )
+      })}
+    </motion.div>
+  )
+}
+
+/* ═══ Single-pile "held hand" — a centered arc of cards, like Now Playing ══
+   Rendered ONLY when exactly one fan pile has cards. Geometry ported from
+   NowPlaying's QueueFan, retuned for the larger home card (scale 0.62). The
+   OUTER wrapper owns the fan position + hover hit-area and NEVER moves (no
+   enter/leave bounce); only the INNER wrapper lifts a single card. DeckCard
+   runs `inDeck` so it drops its own hover-lift + framer layout and the fan
+   owns the one lift — that's what makes it feel like Now Playing (CardFan
+   deliberately does NOT use inDeck). */
+const HELD_SPRING = { type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }
+
+function HeldHandFan({ tracks, allTracks, startIndex, baseScale, currentTrack }) {
+  const [hover, setHover] = useState(null)
+  const n = tracks.length
+  const mid = (n - 1) / 2
+  const w = CARD_W * baseScale
+  const h = CARD_H * baseScale
+
+  // Ported from QueueFan, widened a touch for the larger home card: target hand
+  // width 600, overlap clamp [38,92]. Cards always overlap (w > stepX), so only
+  // their left edge + cover peeks — the classic held-hand look.
+  const stepX  = Math.min(92, Math.max(38, Math.round((600 - w) / Math.max(1, n - 1))))
+  const perDeg = Math.min(8, 42 / n)            // identical to QueueFan
+  const fanW   = w + stepX * (n - 1)
+  // outer cards sit a touch lower than the centre → gentle upward arc
+  const dropAt = t => Math.abs(t) * Math.abs(t) * (3.2 / baseScale)
+
+  return (
+    <motion.div
+      variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 220, damping: 22 } } }}
+      style={{ position: 'relative', width: fanW, height: h + 56, margin: '0 auto', marginTop: 6 }}
+      onMouseLeave={() => setHover(null)}
+    >
+      {tracks.map((track, i) => {
+        const t = i - mid
+        const isUp = hover === i
+        const isActive = track.id === currentTrack?.id
+        return (
+          <motion.div
+            key={track.id}
+            onMouseEnter={() => setHover(i)}
+            initial={{ opacity: 0, y: 70 }}
+            animate={{ opacity: 1, x: t * stepX, y: dropAt(t), rotate: t * perDeg }}
+            transition={{ ...HELD_SPRING, delay: hover === null ? 0.05 * i : 0 }}
+            style={{
+              position: 'absolute', top: 40, left: `calc(50% - ${w / 2}px)`,
+              width: w, height: h, transformOrigin: 'bottom center',
+              zIndex: isActive ? n + 1 : i, cursor: 'pointer',
+            }}
+          >
+            {/* inner wrapper lifts one card (hover wins over the active baseline) */}
+            <motion.div
+              animate={{ y: isUp ? -22 : (isActive ? -12 : 0) }}
+              transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${baseScale})`, transformOrigin: 'top left' }}>
+                <DeckCard track={track} index={startIndex + i} allTracks={allTracks} tiltEnabled={false} inDeck />
+              </div>
+            </motion.div>
           </motion.div>
         )
       })}

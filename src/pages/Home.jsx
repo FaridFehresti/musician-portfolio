@@ -161,6 +161,7 @@ export default function Home() {
               color:         'var(--color-muted)',
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
+              marginBottom:  18,
             }}
           >
             {site.tagline}
@@ -181,17 +182,20 @@ export default function Home() {
             onClick={handlePlay}
             className="flex items-center gap-3 px-8 py-3 rounded-full"
             style={{
-              border:      '1px solid color-mix(in srgb, var(--accent) 50%, transparent)',
-              background:  'transparent',
+              border:      '1px solid color-mix(in srgb, var(--accent) 60%, transparent)',
+              // dark glass backing so the button stays legible over any cover art
+              background:  'linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, rgba(8,5,16,0.82)) 0%, rgba(8,5,16,0.88) 100%)',
               color:       'var(--color-accent)',
               fontFamily:  'var(--font-mono)',
               fontSize:    12,
+              fontWeight:  600,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               cursor:      'pointer',
-              transition:  'background 0.2s, border-color 0.2s',
+              boxShadow:   '0 0 18px color-mix(in srgb, var(--accent) 24%, transparent), inset 0 0 0 1px rgba(255,255,255,0.06)',
+              textShadow:  '0 0 10px color-mix(in srgb, var(--accent) 45%, transparent)',
             }}
-            whileHover={{ scale: 1.05, backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--accent) 85%, transparent)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 0 28px color-mix(in srgb, var(--accent) 45%, transparent), inset 0 0 0 1px rgba(255,255,255,0.08)' }}
             whileTap={{ scale: 0.97 }}
           >
             <span
