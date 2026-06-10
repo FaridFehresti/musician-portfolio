@@ -39,6 +39,12 @@ export function CardTable({ tracks }) {
   const stackSlots = HOME_SLOTS.filter(s => s.kind === 'stack')
   const fanSlots   = HOME_SLOTS.filter(s => s.kind === 'fan')
 
+  // Only ONE stack is spread at a time: the one holding the playing track.
+  // Playing a card in another stack moves the active key here, so the previous
+  // stack collapses (open-one / close-others) and the three stacks stay narrow
+  // enough to share a single row no matter how many cards are added.
+  const activeStackKey = stackSlots.find(s => bySlot[s.key].some(t => t.id === currentTrack?.id))?.key || null
+
   const reveal = { hidden: {}, visible: { transition: { staggerChildren: 0.14, delayChildren: 0.08 } } }
 
   return (
@@ -64,11 +70,12 @@ export function CardTable({ tracks }) {
 
           {isDesktop ? (
             <>
-              {/* Top row: stacks */}
-              <div style={{ display: 'flex', gap: 'clamp(14px, 2.5vw, 40px)', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {/* Top row: stacks — nowrap so they always stay on one line;
+                  compactness comes from only one stack being open at a time. */}
+              <div style={{ display: 'flex', gap: 'clamp(14px, 2.5vw, 40px)', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'nowrap' }}>
                 {stackSlots.filter(s => bySlot[s.key].length).map(s => (
                   <PileColumn key={s.key} label={slotLabels[s.key]} reserve={stackSlots.some(x => bySlot[x.key].length && slotLabels[x.key])}>
-                    <CardStack tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={1} onPlay={play} currentTrack={currentTrack} />
+                    <CardStack tracks={bySlot[s.key]} allTracks={ordered} startIndex={startIndex[s.key]} baseScale={1} onPlay={play} currentTrack={currentTrack} open={s.key === activeStackKey} />
                   </PileColumn>
                 ))}
               </div>
@@ -152,65 +159,69 @@ function PileColumn({ label, reserve, children }) {
 }
 
 /* ═══ A stack of real cards ══════════════════════════════════════════════
-   Starts COLLAPSED — only the top card (#1) shows, the rest hidden directly
-   behind it. The first time the user plays a card from the stack it springs
-   OPEN into a fanned pile and stays open (sticky). Once open the front card
-   is always the active one (so Next/Prev visibly surface the playing card),
-   and clicking a buried card plays it (which surfaces it). */
-function CardStack({ tracks, allTracks, startIndex, baseScale, onPlay, currentTrack }) {
+   COLLAPSED — only the top card (#1) shows, the rest hidden directly behind
+   it, and the box reserves just a single card's footprint. OPEN (driven by
+   CardTable: this stack holds the playing track) springs into a fanned pile.
+   Only one stack is open at a time, so the row stays compact; playing a card
+   in another stack collapses this one again. Once open the front card is the
+   active one (so Next/Prev surface the playing card) and clicking a buried
+   card plays it. */
+function CardStack({ tracks, allTracks, startIndex, baseScale, onPlay, currentTrack, open }) {
   const n = tracks.length
   const w = CARD_W * baseScale
   const h = CARD_H * baseScale
   const OX = 40, OY = 10, ROT = 5
 
   const activeLocal = tracks.findIndex(t => t.id === currentTrack?.id)
-
-  // Open once a card here has been played; stay open for the session
-  // (adjust-state-while-rendering — no effect cascade).
-  const [opened, setOpened] = useState(activeLocal >= 0)
-  if (activeLocal >= 0 && !opened) setOpened(true)
-
   const front = activeLocal >= 0 ? activeLocal : 0
   const displayOrder = [front, ...tracks.map((_, i) => i).filter(i => i !== front)]
 
-  // The box is ALWAYS sized for the full fanned spread, so the layout never
-  // reflows when the stack opens — the front card (top-left, x:0/y:0) stays
-  // exactly put and the rest just fade + slide out from behind it. (Animating
-  // the box size instead made the centred row re-centre, shifting the front
-  // card and slicing titles mid-motion — that was the bug.)
+  // The inner stage shrinks to one card when collapsed and grows to the full
+  // fanned spread only when open. The front card is anchored top-left
+  // (x:0/y:0) so it barely shifts as the box resizes; the width/height ease
+  // keeps the reflow smooth instead of snapping.
   return (
     <motion.div
       variants={{ hidden: { opacity: 0, y: 48, scale: 0.94 }, visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 190, damping: 19 } } }}
-      style={{ position: 'relative', width: w + OX * (n - 1), height: h + OY * (n - 1) }}
+      style={{ position: 'relative' }}
     >
-      {tracks.map((track, i) => {
-        const d = displayOrder.indexOf(i)     // 0 = front
-        const isFront = d === 0
-        return (
-          <motion.div
-            key={track.id}
-            animate={opened
-              ? { x: d * OX, y: d * OY, rotate: d * ROT, scale: 1 - d * 0.05, opacity: 1 }
-              : { x: 0, y: 0, rotate: 0, scale: 1, opacity: isFront ? 1 : 0 }}
-            transition={SWAP}
-            style={{ position: 'absolute', top: 0, left: 0, width: w, height: h, zIndex: n - d, transformOrigin: 'center center' }}
-          >
-            <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${baseScale})`, transformOrigin: 'top left' }}>
-              <DeckCard track={track} index={startIndex + i} allTracks={allTracks} />
-            </div>
+      <div
+        style={{
+          position: 'relative',
+          width:  open ? w + OX * (n - 1) : w,
+          height: open ? h + OY * (n - 1) : h,
+          transition: 'width 0.45s cubic-bezier(0.16,1,0.3,1), height 0.45s cubic-bezier(0.16,1,0.3,1)',
+        }}
+      >
+        {tracks.map((track, i) => {
+          const d = displayOrder.indexOf(i)     // 0 = front
+          const isFront = d === 0
+          return (
+            <motion.div
+              key={track.id}
+              animate={open
+                ? { x: d * OX, y: d * OY, rotate: d * ROT, scale: 1 - d * 0.05, opacity: 1 }
+                : { x: 0, y: 0, rotate: 0, scale: 1, opacity: isFront ? 1 : 0 }}
+              transition={SWAP}
+              style={{ position: 'absolute', top: 0, left: 0, width: w, height: h, zIndex: n - d, transformOrigin: 'center center' }}
+            >
+              <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${baseScale})`, transformOrigin: 'top left' }}>
+                <DeckCard track={track} index={startIndex + i} allTracks={allTracks} />
+              </div>
 
-            {/* buried cards catch the click → play (which surfaces them);
-                inert while collapsed so only the top card #1 is playable */}
-            {!isFront && (
-              <div
-                onClick={() => onPlay(track)}
-                title={`Play “${track.title}”`}
-                style={{ position: 'absolute', inset: 0, zIndex: 60, cursor: 'pointer', borderRadius: 20 * baseScale, pointerEvents: opened ? 'auto' : 'none' }}
-              />
-            )}
-          </motion.div>
-        )
-      })}
+              {/* buried cards catch the click → play (which surfaces them);
+                  inert while collapsed so only the top card #1 is playable */}
+              {!isFront && (
+                <div
+                  onClick={() => onPlay(track)}
+                  title={`Play “${track.title}”`}
+                  style={{ position: 'absolute', inset: 0, zIndex: 60, cursor: 'pointer', borderRadius: 20 * baseScale, pointerEvents: open ? 'auto' : 'none' }}
+                />
+              )}
+            </motion.div>
+          )
+        })}
+      </div>
     </motion.div>
   )
 }
