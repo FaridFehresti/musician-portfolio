@@ -26,8 +26,9 @@ export const CARD_W = 236
 const RADIUS = 20
 const PAD    = 15                          // inner padding (cover + body share it)
 const COVER  = CARD_W - PAD * 2            // 206 — square art
-const BODY_H = 160                         // cover-bottom → card-bottom
-export const CARD_H = PAD + COVER + BODY_H // 381
+const COVER_TOP = PAD + 6                  // 21 — a touch more breathing room above the art
+const BODY_H = 180                         // cover-bottom → card-bottom
+export const CARD_H = COVER_TOP + COVER + BODY_H // 407
 
 /* Z-axis thickness — a stack of offset shadows reads as the card's physical
    edge. Offset up-RIGHT so the thickness sits on the top-right of the card.
@@ -163,7 +164,7 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true, inDeck =
           onClick={handlePlay}
           title={isActive ? (playing ? 'Pause' : 'Play') : `Play ${track.title}`}
           style={{
-            position: 'absolute', top: PAD, left: PAD, width: COVER, height: COVER,
+            position: 'absolute', top: COVER_TOP, left: PAD, width: COVER, height: COVER,
             borderRadius: 11, overflow: 'hidden', cursor: 'pointer', zIndex: 2,
             boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.5), 0 6px 16px rgba(0,0,0,0.4)',
           }}
@@ -210,7 +211,7 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true, inDeck =
             pulse dot while this card is the one playing. */}
         {track?.genre && (
           <div style={{
-            position: 'absolute', top: playing ? 36 : PAD + 7, right: PAD + 7, zIndex: 6,
+            position: 'absolute', top: playing ? COVER_TOP + 21 : COVER_TOP + 7, right: PAD + 7, zIndex: 6,
             maxWidth: COVER - 60, pointerEvents: 'none',
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '3px 8px 3px 6px', borderRadius: 8,
@@ -234,34 +235,29 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true, inDeck =
 
         {/* ── Body: mini-player (now-playing mark · title · like · transport) */}
         <div style={{
-          position: 'absolute', left: PAD, right: PAD, top: PAD + COVER, bottom: PAD, zIndex: 5,
+          position: 'absolute', left: PAD, right: PAD, top: COVER_TOP + COVER, bottom: PAD, zIndex: 5,
           display: 'flex', flexDirection: 'column',
         }}>
-          {/* now-playing eq mark — floated to the body's top-left, OUT of the
-              centered text flow (position:absolute = zero layout cost), so it
-              never shifts the title off centre. */}
-          <span aria-hidden style={{ position: 'absolute', top: 14, left: 0, pointerEvents: 'none' }}>
-            <NowPlayingMark playing={playing} active={isActive} />
-          </span>
-
-          {/* action cluster — floated to the body's top-right, also OUT of flow,
-              so the title centres on the true card midline whether or not the
-              (conditional) video icon renders. Button wiring is unchanged. */}
-          <div style={{ position: 'absolute', top: 9, right: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
-            {track?.video && <VideoButton onClick={e => { e.stopPropagation(); openVideo() }} />}
-            <ShareButton track={track} iconSize={15} color="rgba(255,255,255,0.55)" activeColor="var(--neon-cyan)" />
-            <LikeButton liked={liked} onToggle={() => toggleFavorite(track?.id)} />
+          {/* actions row — now-playing eq mark (left) + video/share/like (right)
+              live on their OWN row, so the title below can use the FULL card
+              width instead of being squeezed between the corner clusters
+              (that squeeze is what truncated long names like "Retrobution"). */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26, marginTop: 8 }}>
+            <span aria-hidden style={{ display: 'inline-flex', alignItems: 'flex-end', pointerEvents: 'none' }}>
+              <NowPlayingMark playing={playing} active={isActive} />
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {track?.video && <VideoButton onClick={e => { e.stopPropagation(); openVideo() }} />}
+              <ShareButton track={track} iconSize={15} color="rgba(255,255,255,0.55)" activeColor="var(--neon-cyan)" />
+              <LikeButton liked={liked} onToggle={() => toggleFavorite(track?.id)} />
+            </div>
           </div>
 
-          {/* Centered title + artist·album. The eq mark + icon cluster float at
-              the corners at the TITLE's vertical level, so ONLY the title needs
-              padding to clear them — it carries symmetric paddingLeft/Right:46 so
-              it stays centred on the true midline. The artist·album line sits
-              BELOW the clusters, so it spans the full width (no padding) and a
-              long "artist · album" isn't squeezed into a double ellipsis. */}
-          <div style={{ marginTop: 12, textAlign: 'center' }}>
+          {/* Title + artist·album — a row BELOW the actions, full width now, so
+              long names fit without an early ellipsis. */}
+          <div style={{ marginTop: 6, textAlign: 'center' }}>
             <p style={{
-              margin: 0, paddingLeft: 46, paddingRight: track?.video ? 74 : 50,
+              margin: 0,
               fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
               fontSize: 17, lineHeight: '21px', color: accent,
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -427,7 +423,7 @@ function VideoButton({ onClick }) {
 function IndexChip({ n, active }) {
   return (
     <div style={{
-      position: 'absolute', top: PAD + 7, left: PAD + 7, zIndex: 6, pointerEvents: 'none',
+      position: 'absolute', top: COVER_TOP + 7, left: PAD + 7, zIndex: 6, pointerEvents: 'none',
       display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 6px', borderRadius: 8,
       background: 'rgba(8,5,16,0.82)',
       border: `1px solid ${active ? 'color-mix(in srgb, var(--neon-magenta) 60%, transparent)' : 'rgba(255,255,255,0.14)'}`,
