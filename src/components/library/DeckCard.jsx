@@ -43,7 +43,7 @@ const EDGE = [
   '2px -2px 3px color-mix(in srgb, var(--card-2) 50%, transparent)',
 ].join(', ')
 
-export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
+export function DeckCard({ track, index, allTracks, tiltEnabled = true, inDeck = false }) {
   const {
     currentTrack, isPlaying,
     loadTrack, setQueue, play, pause, next, prev,
@@ -214,7 +214,7 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
             maxWidth: COVER - 60, pointerEvents: 'none',
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '3px 8px 3px 6px', borderRadius: 8,
-            background: 'rgba(8,5,16,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+            background: 'rgba(8,5,16,0.82)',
             border: '1px solid color-mix(in srgb, var(--neon-cyan) 38%, transparent)',
             boxShadow: '0 2px 10px rgba(0,0,0,0.35)', transition: 'top 0.2s ease',
           }}>
@@ -370,11 +370,17 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true }) {
 
   return (
     <motion.div
-      layout
+      // `layout` re-measures every frame; inside the fan/carousel each card sits
+      // in a plain `transform: scale()` wrapper that framer's layout projection
+      // can't see, so on Now Playing (which re-renders ~60fps off the audio
+      // analyser) it animates phantom sub-pixel deltas → the Firefox "bounce".
+      // In a deck we also drop the hover lift (the fan supplies its own), which
+      // otherwise ping-pongs mouseenter/leave on the overlapping siblings.
+      layout={!inDeck}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ y: -8, zIndex: 30 }}
+      whileHover={inDeck ? undefined : { y: -8, zIndex: 30 }}
       transition={{ type: 'spring', stiffness: 260, damping: 22 }}
       style={{ width: CARD_W, height: CARD_H, position: 'relative', zIndex: isActive ? 20 : 1 }}
     >
@@ -423,7 +429,7 @@ function IndexChip({ n, active }) {
     <div style={{
       position: 'absolute', top: PAD + 7, left: PAD + 7, zIndex: 6, pointerEvents: 'none',
       display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 6px', borderRadius: 8,
-      background: 'rgba(8,5,16,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+      background: 'rgba(8,5,16,0.82)',
       border: `1px solid ${active ? 'color-mix(in srgb, var(--neon-magenta) 60%, transparent)' : 'rgba(255,255,255,0.14)'}`,
     }}>
       <svg width="11" height="11" viewBox="0 0 16 16" aria-hidden>

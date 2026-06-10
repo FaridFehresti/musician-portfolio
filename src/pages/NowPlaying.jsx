@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../store/playerStore'
 import { useFavoritesStore } from '../store/favoritesStore'
@@ -71,8 +71,11 @@ export default function NowPlaying() {
       className="min-h-screen flex flex-col items-center relative"
       style={{ background: 'var(--color-bg)', paddingTop: 88, paddingBottom: 130 }}
     >
-      {/* ── Background: the audio-reactive galaxy, or the original groove ── */}
-      {vizOn ? (
+      {/* ── Background: the audio-reactive galaxy, or the original groove ──
+          The WebGL galaxy is desktop/tablet only — too heavy for mobile GPUs,
+          and it sits behind the swipe carousel there. Mobile falls back to the
+          cheap CSS ambient groove. */}
+      {vizOn && bp !== 'mobile' ? (
         <>
           <div style={{
             position: 'fixed', inset: 0,
@@ -119,8 +122,8 @@ export default function NowPlaying() {
         </>
       )}
 
-      {/* ── Visualizer controls: hide/show + fullscreen ── */}
-      {!vizFull && (
+      {/* ── Visualizer controls: hide/show + fullscreen (desktop/tablet only) ── */}
+      {!vizFull && bp !== 'mobile' && (
         <VizControls vizOn={vizOn} onToggle={() => setVizOn(v => !v)} onFull={() => setVizFull(true)} />
       )}
 
@@ -259,9 +262,8 @@ export default function NowPlaying() {
           style={{
             display: 'flex', alignItems: 'center', gap: 14, maxWidth: 380,
             padding: '11px 18px', borderRadius: 999,
-            background: 'color-mix(in srgb, var(--color-surface) 65%, transparent)',
+            background: 'color-mix(in srgb, var(--color-surface) 90%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)',
-            backdropFilter: 'blur(8px)',
           }}
         >
           <button
@@ -285,7 +287,7 @@ export default function NowPlaying() {
         </div>
 
         {/* ── Suggestions deck (the music cards) ────────────────────── */}
-        <QueueDeck />
+        <QueueDeckMemo />
       </div>
 
       {/* ── Fullscreen visualizer chrome (over the interactive canvas) ── */}
@@ -347,9 +349,8 @@ const iconBtnStyle = {
   width: 40, height: 40, borderRadius: '50%',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', color: 'var(--color-text)',
-  background: 'color-mix(in srgb, var(--color-surface) 70%, transparent)',
+  background: 'color-mix(in srgb, var(--color-surface) 92%, transparent)',
   border: '1px solid color-mix(in srgb, var(--text) 12%, transparent)',
-  backdropFilter: 'blur(8px)',
 }
 
 function VizControls({ vizOn, onToggle, onFull }) {
@@ -459,6 +460,11 @@ function shuffleTracks(list) {
   }
   return a
 }
+
+/* Memoized: the page re-renders ~60fps from the audio analyser, but the deck
+   only depends on track/favorites/breakpoint — memo keeps the 5 cards out of
+   that per-frame reconcile (a big main-thread/scroll win, esp. on Gecko). */
+const QueueDeckMemo = memo(QueueDeck)
 
 function QueueDeck() {
   const bp = useBreakpoint()
@@ -581,7 +587,7 @@ function QueueFan({ cards, scale, allTracks }) {
               style={{ width: '100%', height: '100%' }}
             >
               <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-                <DeckCard track={track} index={idx} allTracks={allTracks} tiltEnabled={false} />
+                <DeckCard track={track} index={idx} allTracks={allTracks} tiltEnabled={false} inDeck />
               </div>
             </motion.div>
           </motion.div>
@@ -618,7 +624,7 @@ function QueueCarousel({ cards, allTracks }) {
           }}
         >
           <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-            <DeckCard track={track} index={idx} allTracks={allTracks} tiltEnabled={false} />
+            <DeckCard track={track} index={idx} allTracks={allTracks} tiltEnabled={false} inDeck />
           </div>
         </div>
       ))}
