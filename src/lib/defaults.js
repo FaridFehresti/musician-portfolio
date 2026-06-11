@@ -11,6 +11,7 @@ export const DEFAULT_SITE = {
   logoHeight: 90,            // px height of the logo in the hero (when set)
   youtubeUrl: '',            // channel URL → "Go to YouTube" button in Videos section
   homeSlots: {},             // optional genre label per home deck pile, keyed by slot ('stack-1'…'fan-3')
+  npLightning: true,         // Now Playing: audio-reactive lightning on the player card
 }
 
 export const DEFAULT_ABOUT = {

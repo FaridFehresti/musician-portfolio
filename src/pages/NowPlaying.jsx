@@ -23,6 +23,9 @@ export default function NowPlaying() {
     shuffle, repeat, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
   const allTracks = useContentStore(s => s.tracks)
+  // CMS kill-switch for the lightning effect (Branding panel). Undefined
+  // (older saved settings) counts as ON.
+  const lightningOn = useContentStore(s => s.site?.npLightning !== false)
 
   const { averageBass } = useAudioAnalyser(howl)
   const [lightbox, setLightbox] = useState(false)
@@ -159,14 +162,16 @@ export default function NowPlaying() {
               overlay={
                 /* Storm layer — rides INSIDE the card's transform chain so
                    the charge/border effects move with the card */
-                <LightningStrike
-                  size={SLEEVE}
-                  playing={isPlaying}
-                  howl={howl}
-                  targetRef={joltRef}
-                  lite={bp === 'mobile'}
-                  diskReach={bp === 'mobile' ? 0.32 : 0.5}
-                />
+                lightningOn ? (
+                  <LightningStrike
+                    size={SLEEVE}
+                    playing={isPlaying}
+                    howl={howl}
+                    targetRef={joltRef}
+                    lite={bp === 'mobile'}
+                    diskReach={bp === 'mobile' ? 0.32 : 0.5}
+                  />
+                ) : null
               }
             />
           </div>

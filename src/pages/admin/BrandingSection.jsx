@@ -1,4 +1,4 @@
-import { Panel, Text, Uploader, Saver, Field } from './ui'
+import { Panel, Text, Uploader, Saver, Field, Toggle } from './ui'
 import { useEditor } from './useEditor'
 import { THEME_OPTIONS } from '../../lib/defaults'
 import { useThemeStore } from '../../store/themeStore'
@@ -69,6 +69,14 @@ export function BrandingSection({ site, onSaved }) {
             )
           })}
         </div>
+      </Field>
+
+      <Field label="Now Playing effects" hint="Audio-reactive lightning that strikes the player card while music plays.">
+        <Toggle
+          checked={draft.npLightning !== false}
+          onChange={v => set({ npLightning: v })}
+          label="Lightning strikes"
+        />
       </Field>
     </Panel>
   )
