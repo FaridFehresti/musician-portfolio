@@ -384,24 +384,29 @@ export const LightningStrike = memo(function LightningStrike({
         st.silent = bass > 0.01 ? 0 : st.silent + dt
         const lowRatio = fluxLow / Math.max(0.004, st.fluxLowAvg)
         const highRatio = fluxHigh / Math.max(0.003, st.fluxHighAvg)
-        // quiet sections: pickier + slower + smaller; loud: rapid + heavy
-        const minRatio = 1.5 + (1 - flow) * 0.5
-        const refractory = 110 + (1 - flow) * 200
-        if (fluxLow > 0.01 && lowRatio > minRatio && now - st.lastStrike > refractory) {
+        // quiet sections: pickier + slower + smaller; loud: rapid + heavy.
+        // Gates are deliberately strict — only onsets well above the song's
+        // own average fire, and the refractory caps the storm at ~2 bolts/s
+        // even in choruses, so strikes punctuate the music instead of
+        // flickering nonstop.
+        const minRatio = 2.5 + (1 - flow) * 0.8
+        const refractory = 380 + (1 - flow) * 340
+        if (fluxLow > 0.028 && lowRatio > minRatio && now - st.lastStrike > refractory) {
           const inten = Math.min(1, 0.16 + flow * 0.5 + (lowRatio - minRatio) * 0.16 + st.fast * 0.2)
           strike(inten, now)
-          if (inten > 0.75 && flow > 0.55) strike(inten * 0.8, now) // peak section ⇒ double bolt
+          if (inten > 0.85 && flow > 0.7) strike(inten * 0.8, now) // peak section ⇒ double bolt
         } else if (st.silent > 1.2 && now > st.nextSynth) {
           // analyser missing or silent (e.g. html5 fallback) — synthetic storm
           strike(0.35 + Math.random() * 0.45, now)
-          st.nextSynth = now + 700 + Math.random() * 1400
-        } else if (now - st.lastStrike > 2300 && st.fast > 0.04 && Math.random() < dt * 0.9) {
+          st.nextSynth = now + 1200 + Math.random() * 2000
+        } else if (now - st.lastStrike > 3000 && st.fast > 0.04 && Math.random() < dt * 0.5) {
           strike(0.12 + flow * 0.2 + Math.random() * 0.1, now) // ambient filler arc
         }
-        // snare / hats at high tempos ⇒ quick small arcs between bass hits
-        if (fluxHigh > 0.008 && highRatio > 1.7 + (1 - flow) * 0.5 &&
-            now - st.lastMinor > 120 + (1 - flow) * 240 && now - st.lastStrike > 50) {
-          strike(0.1 + 0.18 * flow + Math.min(0.3, (highRatio - 1.7) * 0.1), now, true)
+        // snare / hats ⇒ occasional small accent arcs between bass hits —
+        // hard-gated; these firing every ~120ms were the constant-flicker feel
+        if (fluxHigh > 0.02 && highRatio > 2.9 + (1 - flow) * 0.7 &&
+            now - st.lastMinor > 380 + (1 - flow) * 420 && now - st.lastStrike > 160) {
+          strike(0.1 + 0.18 * flow + Math.min(0.3, (highRatio - 2.9) * 0.1), now, true)
         }
       }
 

@@ -12,6 +12,9 @@ export const DEFAULT_SITE = {
   youtubeUrl: '',            // channel URL → "Go to YouTube" button in Videos section
   homeSlots: {},             // optional genre label per home deck pile, keyed by slot ('stack-1'…'fan-3')
   npLightning: true,         // Now Playing: audio-reactive lightning on the player card
+  npEmbers: false,           // Now Playing: glowing embers shed from the card body
+  npPulse: false,            // Now Playing: shockwave rings on beats
+  npOrbit: false,            // Now Playing: comets orbiting the card outline
 }
 
 export const DEFAULT_ABOUT = {

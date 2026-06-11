@@ -7,6 +7,9 @@ import { CoverLightbox } from '../components/ui/CoverLightbox'
 import { ShareButton } from '../components/ui/ShareButton'
 import { HoloVinylCard } from '../components/vinyl/HoloVinylCard'
 import { LightningStrike } from '../components/vinyl/LightningStrike'
+import { EmberDrift } from '../components/vinyl/effects/EmberDrift'
+import { PulseRings } from '../components/vinyl/effects/PulseRings'
+import { CometOrbit } from '../components/vinyl/effects/CometOrbit'
 import { DeckCard, CARD_W, CARD_H } from '../components/library/DeckCard'
 import { useBreakpoint } from '../hooks/useViewport'
 import { fmtDuration } from '../data/tracks'
@@ -23,9 +26,12 @@ export default function NowPlaying() {
     shuffle, repeat, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
   const allTracks = useContentStore(s => s.tracks)
-  // CMS kill-switch for the lightning effect (Branding panel). Undefined
-  // (older saved settings) counts as ON.
+  // CMS switches for the card effects (Branding panel). Lightning predates
+  // the setting, so undefined counts as ON; the newer effects are opt-in.
   const lightningOn = useContentStore(s => s.site?.npLightning !== false)
+  const embersOn = useContentStore(s => s.site?.npEmbers === true)
+  const pulseOn = useContentStore(s => s.site?.npPulse === true)
+  const orbitOn = useContentStore(s => s.site?.npOrbit === true)
 
   const { averageBass } = useAudioAnalyser(howl)
   const [lightbox, setLightbox] = useState(false)
@@ -160,18 +166,48 @@ export default function NowPlaying() {
               onClick={currentTrack?.coverArt ? () => setLightbox(true) : undefined}
               onCoverZoom={currentTrack?.coverArt ? () => setLightbox(true) : undefined}
               overlay={
-                /* Storm layer — rides INSIDE the card's transform chain so
-                   the charge/border effects move with the card */
-                lightningOn ? (
-                  <LightningStrike
-                    size={SLEEVE}
-                    playing={isPlaying}
-                    howl={howl}
-                    targetRef={joltRef}
-                    lite={bp === 'mobile'}
-                    diskReach={bp === 'mobile' ? 0.32 : 0.5}
-                  />
-                ) : null
+                /* Effect layers — they ride INSIDE the card's transform
+                   chain so border-hugging visuals move with the card.
+                   Each is its own canvas; the CMS toggles them. */
+                <>
+                  {lightningOn && (
+                    <LightningStrike
+                      size={SLEEVE}
+                      playing={isPlaying}
+                      howl={howl}
+                      targetRef={joltRef}
+                      lite={bp === 'mobile'}
+                      diskReach={bp === 'mobile' ? 0.32 : 0.5}
+                    />
+                  )}
+                  {embersOn && (
+                    <EmberDrift
+                      size={SLEEVE}
+                      playing={isPlaying}
+                      howl={howl}
+                      lite={bp === 'mobile'}
+                      diskReach={bp === 'mobile' ? 0.32 : 0.5}
+                    />
+                  )}
+                  {pulseOn && (
+                    <PulseRings
+                      size={SLEEVE}
+                      playing={isPlaying}
+                      howl={howl}
+                      lite={bp === 'mobile'}
+                      diskReach={bp === 'mobile' ? 0.32 : 0.5}
+                    />
+                  )}
+                  {orbitOn && (
+                    <CometOrbit
+                      size={SLEEVE}
+                      playing={isPlaying}
+                      howl={howl}
+                      lite={bp === 'mobile'}
+                      diskReach={bp === 'mobile' ? 0.32 : 0.5}
+                    />
+                  )}
+                </>
               }
             />
           </div>

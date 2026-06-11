@@ -71,12 +71,29 @@ export function BrandingSection({ site, onSaved }) {
         </div>
       </Field>
 
-      <Field label="Now Playing effects" hint="Audio-reactive lightning that strikes the player card while music plays.">
-        <Toggle
-          checked={draft.npLightning !== false}
-          onChange={v => set({ npLightning: v })}
-          label="Lightning strikes"
-        />
+      <Field label="Now Playing effects" hint="Audio-reactive effects on the player card while music plays. They can be combined — each adds its own GPU load.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Toggle
+            checked={draft.npLightning !== false}
+            onChange={v => set({ npLightning: v })}
+            label="Lightning strikes"
+          />
+          <Toggle
+            checked={draft.npEmbers === true}
+            onChange={v => set({ npEmbers: v })}
+            label="Ember drift — the card sheds glowing sparks"
+          />
+          <Toggle
+            checked={draft.npPulse === true}
+            onChange={v => set({ npPulse: v })}
+            label="Pulse rings — shockwaves ripple out on beats"
+          />
+          <Toggle
+            checked={draft.npOrbit === true}
+            onChange={v => set({ npOrbit: v })}
+            label="Comet orbit — lights race around the card"
+          />
+        </div>
       </Field>
     </Panel>
   )
