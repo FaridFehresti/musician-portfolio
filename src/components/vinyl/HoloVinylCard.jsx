@@ -45,6 +45,7 @@ export function HoloVinylCard({
   onPlay,
   onClick,
   onCoverZoom,
+  overlay = null, // rendered inside the stage → inherits tilt/facing motion
 }) {
   const v = VARIANTS[variant] || VARIANTS.grid
   const reduced = usePrefersReducedMotion()
@@ -179,6 +180,11 @@ export function HoloVinylCard({
 
         {playing && <PlayingPulse />}
       </div>
+
+      {/* Effect overlay (e.g. the lightning storm) — a sibling of the sleeve
+          INSIDE the transformed stage, so border-hugging effects stay glued
+          to the card through tilt / cursor-facing / jolt motion. */}
+      {overlay}
     </div>
   )
 

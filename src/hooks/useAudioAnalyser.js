@@ -29,6 +29,16 @@ function getGraph(ctx, node) {
   return g
 }
 
+/* Imperative access to the same shared analyser graph (no React state) —
+   for canvas/WebGL loops that read frequency data inside their own rAF.
+   Returns null until the Howl's media node is connectable. */
+export function getSharedAnalyser(howl) {
+  const ctx = window.Howler?.ctx
+  const node = howl?._sounds?.[0]?._node
+  if (!ctx || !node) return null
+  try { return getGraph(ctx, node).analyser } catch { return null }
+}
+
 export function useAudioAnalyser(howl) {
   const rafRef = useRef(null)
   const [frequencyData, setFrequencyData] = useState(() => new Uint8Array(128))

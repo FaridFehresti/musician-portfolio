@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, memo } from 'react'
+import { useState, useMemo, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../store/playerStore'
 import { useFavoritesStore } from '../store/favoritesStore'
@@ -6,6 +6,7 @@ import { useAudioAnalyser } from '../hooks/useAudioAnalyser'
 import { CoverLightbox } from '../components/ui/CoverLightbox'
 import { ShareButton } from '../components/ui/ShareButton'
 import { HoloVinylCard } from '../components/vinyl/HoloVinylCard'
+import { LightningStrike } from '../components/vinyl/LightningStrike'
 import { DeckCard, CARD_W, CARD_H } from '../components/library/DeckCard'
 import { useBreakpoint } from '../hooks/useViewport'
 import { fmtDuration } from '../data/tracks'
@@ -26,6 +27,9 @@ export default function NowPlaying() {
   const { averageBass } = useAudioAnalyser(howl)
   const [lightbox, setLightbox] = useState(false)
   const [prevVol, setPrevVol] = useState(0.8)
+  // The lightning's impact jolt is applied imperatively to this wrapper —
+  // a dedicated element so it never fights framer-motion's transforms.
+  const joltRef = useRef(null)
 
   // Audio-reactive galaxy background. `vizOn` is the user's keep/hide choice
   // (persisted); `vizFull` expands it to a fullscreen visualizer.
@@ -136,22 +140,36 @@ export default function NowPlaying() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ position: 'relative' }}
         >
-          <HoloVinylCard
-            variant="big"
-            size={SLEEVE}
-            diskEnabled
-            diskReach={bp === 'mobile' ? 0.32 : 0.5}
-            track={currentTrack}
-            active={hasTrack}
-            playing={isPlaying}
-            paused={isPaused}
-            glowStrength={averageBass / 255}
-            showInfo={false}
-            showPlayButton={false}
-            holoIntensity={1.1}
-            onClick={currentTrack?.coverArt ? () => setLightbox(true) : undefined}
-            onCoverZoom={currentTrack?.coverArt ? () => setLightbox(true) : undefined}
-          />
+          <div ref={joltRef} style={{ position: 'relative', zIndex: 1, willChange: 'transform, filter' }}>
+            <HoloVinylCard
+              variant="big"
+              size={SLEEVE}
+              diskEnabled
+              diskReach={bp === 'mobile' ? 0.32 : 0.5}
+              track={currentTrack}
+              active={hasTrack}
+              playing={isPlaying}
+              paused={isPaused}
+              glowStrength={averageBass / 255}
+              showInfo={false}
+              showPlayButton={false}
+              holoIntensity={1.1}
+              onClick={currentTrack?.coverArt ? () => setLightbox(true) : undefined}
+              onCoverZoom={currentTrack?.coverArt ? () => setLightbox(true) : undefined}
+              overlay={
+                /* Storm layer — rides INSIDE the card's transform chain so
+                   the charge/border effects move with the card */
+                <LightningStrike
+                  size={SLEEVE}
+                  playing={isPlaying}
+                  howl={howl}
+                  targetRef={joltRef}
+                  lite={bp === 'mobile'}
+                  diskReach={bp === 'mobile' ? 0.32 : 0.5}
+                />
+              }
+            />
+          </div>
         </motion.div>
 
         {/* ── Track info ────────────────────────────────────────────── */}
