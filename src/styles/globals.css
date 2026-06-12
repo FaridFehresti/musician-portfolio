@@ -2,12 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Theme system ────────────────────────────────────────────────────
-   Each theme sets the semantic palette; legacy token names alias onto it
-   so every existing var(--color-*) / var(--neon-*) reference re-themes for
-   free. Default = "midnight". Switch by setting <html data-theme="…">.   */
+/* ── "Smoke & Whiskey" — single fixed analog theme ───────────────────
+   Record-shop / studio palette: charcoal espresso, walnut, worn leather,
+   whiskey amber, oxblood, aged cream. No theme switcher; the legacy
+   --color-* aliases are kept because the admin CMS styles itself with
+   them (inline styles, not Tailwind).                                  */
 :root {
-  /* legacy aliases → semantic tokens */
+  /* semantic palette */
+  --bg: #161210;        /* charcoal espresso — page */
+  --bg-deep: #0e0b09;   /* deepest wells — console bar, footer */
+  --surface: #211a15;   /* walnut panel */
+  --surface-2: #2c231b; /* worn leather, raised */
+  --line: #3d3128;      /* hairline borders / shelf rails */
+  --text: #ece2cf;      /* aged cream */
+  --muted: #9c8b73;     /* faded kraft */
+  --accent: #d18b2f;    /* whiskey amber — primary action, VU glow */
+  --accent-2: #a2452e;  /* oxblood — record labels, VU red zone */
+  --brass: #b08d57;     /* hardware details, knobs, trims */
+  --paper: #e7dcc4;     /* cream sleeve / poster surfaces */
+  --paper-ink: #221b12; /* ink on paper surfaces */
+  --on-accent: #1c1208; /* text on amber */
+  --glow: rgba(209, 139, 47, 0.3); /* tube-amp halo */
+
+  /* legacy aliases → admin CMS reads these via inline styles */
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -15,127 +32,11 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-warm: var(--accent-2);
-  --neon-magenta: var(--accent);
-  --neon-cyan: var(--accent-2);
-  --neon-violet: var(--accent-2);
-  --glow-magenta: var(--glow);
-  --glow-cyan: var(--glow-2);
 
-  --font-display: 'Playfair Display', serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-
-  /* default palette — Midnight */
-  --bg: #0b1020;
-  --surface: #131a2e;
-  --surface-2: #1b2440;
-  --text: #e6ecff;
-  --muted: #8893b5;
-  --accent: #6d8bff;
-  --accent-2: #22d3ee;
-  --on-accent: #06091a;
-  --glow: rgba(109, 139, 255, 0.42);
-  --glow-2: rgba(34, 211, 238, 0.42);
-  --foil-1: #6d8bff;
-  --foil-2: #a78bfa;
-  --foil-3: #22d3ee;
-  --card-1: #131a2e;
-  --card-2: #0c1120;
-}
-
-/* 1 ── Aurora (light, iridescent) */
-html[data-theme='aurora'] {
-  --bg: #f4f2fb;
-  --surface: #ffffff;
-  --surface-2: #ece9f6;
-  --text: #1c1830;
-  --muted: #6b6685;
-  --accent: #6d4dff;
-  --accent-2: #00b3c4;
-  --on-accent: #ffffff;
-  --glow: rgba(109, 77, 255, 0.30);
-  --glow-2: rgba(0, 179, 196, 0.30);
-  --foil-1: #6d4dff;
-  --foil-2: #00b3c4;
-  --foil-3: #ff6fae;
-  --card-1: #20203a;
-  --card-2: #14142a;
-}
-
-/* 2 ── Sandstone (warm light) */
-html[data-theme='sandstone'] {
-  --bg: #ece4d6;
-  --surface: #f7f1e6;
-  --surface-2: #e0d6c4;
-  --text: #2a2014;
-  --muted: #7a6e5c;
-  --accent: #b8430f;
-  --accent-2: #1f8a70;
-  --on-accent: #fff7ed;
-  --glow: rgba(184, 67, 15, 0.28);
-  --glow-2: rgba(31, 138, 112, 0.28);
-  --foil-1: #ff8a4c;
-  --foil-2: #ffcf5c;
-  --foil-3: #2bbf9e;
-  --card-1: #241a12;
-  --card-2: #160f0a;
-}
-
-/* 3 ── Slate (mid neutral) */
-html[data-theme='slate'] {
-  --bg: #2a303c;
-  --surface: #333a48;
-  --surface-2: #3d4555;
-  --text: #eef2f8;
-  --muted: #9aa6b8;
-  --accent: #38bdf8;
-  --accent-2: #34d399;
-  --on-accent: #06121f;
-  --glow: rgba(56, 189, 248, 0.36);
-  --glow-2: rgba(52, 211, 153, 0.36);
-  --foil-1: #38bdf8;
-  --foil-2: #818cf8;
-  --foil-3: #34d399;
-  --card-1: #1c2230;
-  --card-2: #141926;
-}
-
-/* 4 ── Midnight (dark) — explicit copy of the default for the switcher */
-html[data-theme='midnight'] {
-  --bg: #0b1020;
-  --surface: #131a2e;
-  --surface-2: #1b2440;
-  --text: #e6ecff;
-  --muted: #8893b5;
-  --accent: #6d8bff;
-  --accent-2: #22d3ee;
-  --on-accent: #06091a;
-  --glow: rgba(109, 139, 255, 0.42);
-  --glow-2: rgba(34, 211, 238, 0.42);
-  --foil-1: #6d8bff;
-  --foil-2: #a78bfa;
-  --foil-3: #22d3ee;
-  --card-1: #131a2e;
-  --card-2: #0c1120;
-}
-
-/* 5 ── Synthwave (darkest, neon) */
-html[data-theme='synthwave'] {
-  --bg: #0b0612;
-  --surface: #140a22;
-  --surface-2: #1d0f33;
-  --text: #f3e9ff;
-  --muted: #8b7da6;
-  --accent: #ff2fd0;
-  --accent-2: #00e5ff;
-  --on-accent: #0b0612;
-  --glow: rgba(255, 47, 208, 0.45);
-  --glow-2: rgba(0, 229, 255, 0.45);
-  --foil-1: #00e5ff;
-  --foil-2: #7a4dff;
-  --foil-3: #ff2fd0;
-  --card-1: #181231;
-  --card-2: #0d0920;
+  --font-display: 'Oswald', sans-serif;
+  --font-serif: 'Libre Caslon Text', serif;
+  --font-body: 'Archivo', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 }
 
 *,
@@ -152,272 +53,259 @@ html {
 }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — brass on walnut */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: var(--bg-deep);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-accent);
+  background: var(--line);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent-warm);
+  background: var(--brass);
 }
 
-/* Vinyl spin keyframe */
-@keyframes vinyl-spin {
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Hide scrollbar (carousels) while keeping scroll/swipe */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Motion ──────────────────────────────────────────────────────── */
+
+/* 33⅓ RPM ≈ 1.8s per revolution */
+@keyframes spin33 {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 
-/* Playing-indicator pulse (was referenced inline but never defined) */
+/* Cassette reels (faster, mechanical) */
+@keyframes reel {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Tube / pilot-lamp flicker */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92%      { opacity: 1; }
+  94%      { opacity: 0.6; }
+  96%      { opacity: 0.9; }
+  98%      { opacity: 0.75; }
+}
+
+/* Playing-indicator pulse */
 @keyframes pulse {
   0%, 100% { opacity: 1;    transform: scale(1); }
   50%      { opacity: 0.45; transform: scale(0.82); }
 }
 
-/* Now-playing equalizer bars (library cards) */
-@keyframes eq-bar {
-  0%, 100% { height: 30%; }
-  50%      { height: 100%; }
-}
+/* ── Analog textures (CSS + inline SVG only) ─────────────────────── */
 
-/* Hide scrollbar (mobile card carousel) while keeping scroll/swipe */
-.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-
-
-/* ── Holographic foil (Dota 2 / Pokémon-style) ──────────────────────
-   Layers live inside .holo-sleeve (clipped to its radius). Pointer
-   position is written to CSS vars on .holo-stage by HoloVinylCard;
-   custom props inherit down into these layers. */
-.holo-stage {
-  --mx: 50;    /* pointer x, 0–100 (%) */
-  --my: 50;    /* pointer y, 0–100 (%) */
-  --posx: 50;  /* foil gradient scroll x */
-  --posy: 50;  /* foil gradient scroll y */
-  --hyp: 0;    /* 0–1 distance from centre → sparkle/foil "ignition" */
-  --holo: 1;   /* per-card intensity multiplier */
-}
-
-.holo-foil-layer {
-  position: absolute;
+/* Film grain — fixed full-viewport overlay (mount once in the shell) */
+.grain {
+  position: fixed;
   inset: 0;
-  border-radius: inherit;
   pointer-events: none;
-  transition: opacity 0.4s ease;
+  z-index: 90;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  mix-blend-mode: overlay;
 }
 
-/* No color-dodge anywhere (it divides-to-white on bright album pixels and was
-   the source of the old neon/white wash). screen / plus-lighter / soft-light
-   only — all clamp at white. Everything is gated on --hyp so the foil is faint
-   at rest (pointer centred) and BLOOMS as the pointer sweeps; the
-   .holo-foil-layer 0.4s opacity transition gives the fade-in on hover. */
-
-/* 0 — glass base reflection: broad, soft, slightly-cool lit film = the body of
-   the glass pane. screen is safe on dark art (caps per channel at white). */
-.holo-light-spot {
-  mix-blend-mode: screen;
-  background: radial-gradient(
-    68% 68% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
-    rgba(216, 234, 255, 0.2) 0%,
-    rgba(150, 196, 255, 0.09) 42%,
-    transparent 74%
-  );
-  opacity: calc(0.1 + 0.4 * var(--hyp));
-}
-
-/* 1 — holographic tint: a faint oily rainbow that only reads as you move.
-   plus-lighter (additive, hue-preserving, self-limiting) keeps the colour
-   COLOURED instead of washing neon-white. Wide gentle stops = no hard bands;
-   squared --hyp = near-invisible at rest, grows on sweep. */
-.holo-foil-color {
-  mix-blend-mode: plus-lighter;
-  background-image: repeating-linear-gradient(
-    115deg,
-    var(--foil-1) 0%, var(--foil-2) 14%, var(--foil-3) 28%,
-    var(--foil-1) 42%, var(--foil-2) 56%, var(--foil-3) 70%
-  );
-  background-size: 320% 320%;
-  background-position: calc(var(--posx) * 1%) calc(var(--posy) * 1%);
-  opacity: calc(0.18 * var(--holo) * (0.08 + 0.92 * var(--hyp) * var(--hyp)));
-}
-
-/* 2 — soft glass sheen (REPLACES the old white interference streak): ONE wide,
-   low-alpha diagonal band on soft-light, tracking the pointer. No repeating
-   hard lines, and multiplied by BARE var(--hyp) (no floor) → literally zero at
-   rest, so the streak can never re-appear. */
-.holo-foil-glint {
-  mix-blend-mode: soft-light;
-  background-image: linear-gradient(
-    -48deg,
-    transparent 32%,
-    rgba(255, 255, 255, 0.18) 50%,
-    transparent 68%
-  );
-  background-size: 260% 260%;
-  background-position: calc(var(--posy) * -1%) calc(var(--posx) * 1%);
-  opacity: calc(0.32 * var(--holo) * var(--hyp));
-}
-
-/* 3 — sparkle whisper: fine dust in the glass, only near the cursor. screen
-   (NOT color-dodge) so the near-white SVG dots can't divide-to-white on bright
-   pixels. background-image (the data-URI) is set inline by the component. */
-.holo-foil-sparkle {
-  mix-blend-mode: screen;
-  background-size: 170px 170px;
-  background-position: calc(var(--mx) * 1.4px) calc(var(--my) * 1.4px);
-  opacity: calc(0.4 * var(--holo) * (0.04 + 0.96 * var(--hyp) * var(--hyp)));
-}
-
-/* 4 — hero specular hotspot: the single brightest cue = glass catching light.
-   Small, soft, slightly-cool, glides exactly under the pointer. A small floor
-   makes the catch present the instant you hover, then it blooms with --hyp and
-   fades to nothing at the edges. Tight radius = a crisp reflection, not a band. */
-.holo-spec {
-  mix-blend-mode: screen;
-  background: radial-gradient(
-    17% 17% at calc(var(--mx) * 1%) calc(var(--my) * 1%),
-    rgba(240, 248, 255, 0.5) 0%,
-    rgba(210, 230, 255, 0.12) 36%,
-    transparent 62%
-  );
-  opacity: calc(0.2 + 0.48 * var(--hyp));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .holo-foil-layer { transition: none !important; }
-  .holo-foil-sparkle { display: none !important; }
-}
-
-/* Touch devices can't hover; skip the heaviest blended layer */
-@media (pointer: coarse) {
-  .holo-foil-sparkle { display: none; }
-}
-
-/* Noise texture overlay (applied via pseudoelement on hero) */
+/* Local noise for panels/sleeves (pseudoelement, inherits radius) */
+.noise-overlay { position: relative; }
 .noise-overlay::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
   background-size: 200px 200px;
   pointer-events: none;
   z-index: 1;
   border-radius: inherit;
 }
 
-/* Gramophone 3D transitions */
-.gram-spring {
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+/* Worn poster / sleeve paper: cream stock, heavier tooth, edge vignette */
+.paper {
+  position: relative;
+  background-color: var(--paper);
+  color: var(--paper-ink);
+}
+.paper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(120% 100% at 50% 40%, transparent 60%, rgba(34, 27, 18, 0.18) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E");
+  background-size: auto, 180px 180px;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
 }
 
-/* Range input styling */
+/* Ring wear — the ghost circle a record presses into its sleeve */
+.ring-wear::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 58%,
+    rgba(236, 226, 207, 0.07) 62%,
+    rgba(236, 226, 207, 0.1) 66%,
+    rgba(236, 226, 207, 0.05) 70%,
+    transparent 74%
+  );
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+}
+
+/* Vinyl surface — concentric grooves with a soft light sweep */
+.grooves {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(236, 226, 207, 0.08) 0%, transparent 45%),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      #0c0a08 0px,
+      #14110e 1px,
+      #0c0a08 2px,
+      #100d0a 3px
+    );
+}
+
+/* VU meter window — warm glass over cream dial */
+.vu-glass {
+  background: linear-gradient(180deg, #f0e6cf 0%, #e2d5b8 100%);
+  box-shadow:
+    inset 0 2px 6px rgba(34, 27, 18, 0.45),
+    inset 0 -1px 2px rgba(34, 27, 18, 0.25),
+    0 1px 0 rgba(236, 226, 207, 0.08);
+}
+
+/* Brushed-metal console face */
+.console-face {
+  background:
+    linear-gradient(180deg, rgba(236, 226, 207, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, var(--surface) 0%, var(--bg-deep) 100%);
+  border-top: 1px solid var(--line);
+}
+
+/* Tube-amp pilot glow (dot / lamp elements) */
+.tube-glow {
+  box-shadow: 0 0 8px var(--glow), 0 0 18px var(--glow);
+}
+
+/* ── Form base styles ────────────────────────────────────────────── */
+
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
   cursor: pointer;
 }
-
 input[type='range']::-webkit-slider-runnable-track {
   height: 3px;
-  background: var(--color-surface-2);
+  background: var(--surface-2);
   border-radius: 2px;
 }
-
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--accent);
   margin-top: -4.5px;
   transition: transform 0.15s ease;
 }
-
 input[type='range']:hover::-webkit-slider-thumb {
   transform: scale(1.3);
 }
-
 input[type='range']::-moz-range-track {
   height: 3px;
-  background: var(--color-surface-2);
+  background: var(--surface-2);
   border-radius: 2px;
 }
-
 input[type='range']::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--accent);
   border: none;
 }
 
-/* Volume slider — thicker, with a clearly filled portion. Drive the fill with
-   an inline `--pct` (e.g. style={{'--pct': '80%'}}) so it's visible at a glance. */
-.vol-slider {
+/* Tape-window seek / volume slider: amber fill driven by inline --pct */
+.tape-slider {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  border-radius: 999px;
+  border-radius: 2px;
   cursor: pointer;
   outline: none;
-  background: color-mix(in srgb, var(--text) 20%, transparent);
+  background: color-mix(in srgb, var(--text) 14%, transparent);
 }
-.vol-slider::-webkit-slider-runnable-track {
+.tape-slider::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: 2px;
   background: linear-gradient(
     90deg,
-    var(--neon-magenta) 0%,
-    var(--neon-magenta) var(--pct, 50%),
-    color-mix(in srgb, var(--text) 20%, transparent) var(--pct, 50%),
-    color-mix(in srgb, var(--text) 20%, transparent) 100%
+    var(--accent) 0%,
+    var(--accent) var(--pct, 50%),
+    color-mix(in srgb, var(--text) 14%, transparent) var(--pct, 50%),
+    color-mix(in srgb, var(--text) 14%, transparent) 100%
   );
 }
-.vol-slider::-webkit-slider-thumb {
+.tape-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 15px;
-  height: 15px;
-  margin-top: -4.5px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--neon-magenta);
-  box-shadow: 0 0 8px var(--glow-magenta);
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border-radius: 2px;
+  background: var(--brass);
+  border: 1px solid var(--bg-deep);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   transition: transform 0.15s ease;
 }
-.vol-slider:hover::-webkit-slider-thumb,
-.vol-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
-.vol-slider::-moz-range-track {
+.tape-slider:hover::-webkit-slider-thumb,
+.tape-slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+.tape-slider::-moz-range-track {
   height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
 }
-.vol-slider::-moz-range-progress {
+.tape-slider::-moz-range-progress {
   height: 6px;
-  border-radius: 999px;
-  background: var(--neon-magenta);
+  border-radius: 2px;
+  background: var(--accent);
 }
-.vol-slider::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--neon-magenta);
-  box-shadow: 0 0 8px var(--glow-magenta);
+.tape-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--brass);
+  border: 1px solid var(--bg-deep);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .grain { display: none; }
 }
