@@ -4,26 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%230e0b09' stroke='%233d3128' stroke-width='1'/%3E%3Ccircle cx='12' cy='12' r='7' fill='none' stroke='%232c231b' stroke-width='0.6'/%3E%3Ccircle cx='12' cy='12' r='4' fill='%23d18b2f'/%3E%3Ccircle cx='12' cy='12' r='0.9' fill='%230e0b09'/%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>html { background: #161210; color-scheme: dark; }</style>
-    <!-- Apply the saved theme before paint so the backdrop matches (no flash) -->
-    <script>
-      (function () {
-        var BG = {
-          'smoke': '#161210', 'midnight-sapphire': '#0e1530',
-          'emerald-gold': '#0b1a13', 'crimson-velvet': '#1e0c0f'
-        };
-        try {
-          var t = localStorage.getItem('artist-portfolio-theme');
-          if (!BG[t]) t = 'smoke';
-          document.documentElement.setAttribute('data-theme', t);
-          document.documentElement.style.background = BG[t];
-        } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'smoke');
-        }
-      })();
-    </script>
+    <!-- Neutral dark backdrop before the chosen template's CSS lands (both are dark) -->
+    <style>html { background: #14121a; color-scheme: dark; }</style>
     <title>Artist Portfolio — Music &amp; Sound</title>
-    <meta name="description" content="Metal, rock and blues — pressed, played and free to hear. Drop the needle." />
+    <meta name="description" content="Original music — free to hear. Listen now." />
     <!-- Default share-card tags. In production the server overrides these per
          request with the CMS artist name + logo (see server/index.js). -->
     <meta property="og:type" content="website" />
@@ -34,10 +18,6 @@
     <meta name="twitter:description" content="Listen free — no account, no subscription." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div id="root"></div>

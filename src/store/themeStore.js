@@ -1,16 +1,16 @@
 import { create } from 'zustand'
 import { THEME_OPTIONS } from '../lib/defaults'
 
-/* Analog theme switcher. The list lives in defaults.js (server-safe, shared
-   with the CMS picker + the index.html pre-paint script); each id maps to an
-   html[data-theme='…'] block in globals.css. Selecting a theme writes the
-   attribute on <html> and persists it; the public site shows whatever theme
-   the admin saved (via contentStore.applySite → setTheme). */
+/* Template-agnostic theme switcher. The list (defaults.js) is the union of
+   both templates' themes; this store just validates an id, writes
+   <html data-theme="…"> and persists it. Whichever template's stylesheet is
+   loaded interprets the attribute via its own html[data-theme] blocks, so the
+   same store serves Classic (neon) and Analog (record-shop) themes. */
 export const THEMES = THEME_OPTIONS
 
-const IDS = THEMES.map(t => t.id)
+const IDS = THEMES.map((t) => t.id)
 const KEY = 'artist-portfolio-theme'
-const DEFAULT = 'smoke'
+const DEFAULT = 'midnight'
 
 function initialTheme() {
   if (typeof window === 'undefined') return DEFAULT

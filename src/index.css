@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Shared baseline ─────────────────────────────────────────────────
+   The Tailwind layers live here ONCE for both templates. Each template
+   ships its own CSS (code-split with its lazy chunk) that overrides :root
+   with its real palette + web fonts. These fallback tokens keep the Root
+   splash — and the admin CMS — styled with system fonts before/without a
+   template's CSS. */
+:root {
+  --color-bg: #161210;
+  --color-surface: #211a15;
+  --color-surface-2: #2c231b;
+  --color-text: #ece2cf;
+  --color-muted: #9c8b73;
+  --color-accent: #d18b2f;
+  --color-accent-warm: #a2452e;
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --font-mono: ui-monospace, 'IBM Plex Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { overflow-x: hidden; }
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

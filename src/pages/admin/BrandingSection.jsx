@@ -1,13 +1,24 @@
 import { Panel, Text, Uploader, Saver, Field, Toggle } from './ui'
 import { useEditor } from './useEditor'
-import { THEME_OPTIONS } from '../../lib/defaults'
+import { THEME_OPTIONS_BY_TEMPLATE, TEMPLATE_OPTIONS } from '../../lib/defaults'
 import { useThemeStore } from '../../store/themeStore'
 
-/* Branding — logo (replaces the hero artist name), name, tagline, and the
-   site theme (the public theme switcher was moved here). */
+/* Branding — logo (replaces the hero artist name), name, tagline, the site
+   template (which whole front-end visitors see), and the theme. */
 export function BrandingSection({ site, onSaved }) {
   const { draft, set, dirty, saving, savedAt, save } = useEditor('site', site, onSaved)
   const setTheme = useThemeStore(s => s.setTheme)
+
+  const template = draft.template || 'classic'
+  const themeOpts = THEME_OPTIONS_BY_TEMPLATE[template] || THEME_OPTIONS_BY_TEMPLATE.classic
+
+  function pickTemplate(id) {
+    const opts = THEME_OPTIONS_BY_TEMPLATE[id] || []
+    const patch = { template: id }
+    // keep the theme valid for the new template
+    if (!opts.some(o => o.id === draft.theme)) patch.theme = opts[0]?.id
+    set(patch)
+  }
 
   function pickTheme(id) {
     set({ theme: id })
@@ -44,9 +55,34 @@ export function BrandingSection({ site, onSaved }) {
       <Text label="Tagline" value={draft.tagline} onChange={v => set({ tagline: v })} hint="The line under the hero title." />
       <Text label="YouTube channel URL" value={draft.youtubeUrl} onChange={v => set({ youtubeUrl: v })} placeholder="https://youtube.com/@yourchannel" hint="When set, a “Go to YouTube” button appears on the home Videos section." />
 
-      <Field label="Theme" hint="Sets the colour theme for the whole public site.">
+      <Field label="Site template" hint="The entire front-end style visitors see. Switching changes the whole site; reload the public site to see it. Each template has its own themes.">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {THEME_OPTIONS.map(t => {
+          {TEMPLATE_OPTIONS.map(t => {
+            const active = template === t.id
+            return (
+              <button
+                key={t.id} type="button" onClick={() => pickTemplate(t.id)}
+                style={{
+                  flex: '1 1 200px', textAlign: 'left', padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
+                  background: active ? 'color-mix(in srgb, var(--color-accent) 16%, transparent)' : 'var(--color-bg)',
+                  border: active ? '1.5px solid var(--color-accent)' : '1px solid color-mix(in srgb, var(--text) 14%, transparent)',
+                }}
+              >
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, letterSpacing: '0.04em', color: active ? 'var(--color-accent)' : 'var(--color-text)' }}>
+                  {t.label}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 11, lineHeight: 1.4, color: 'var(--color-muted)' }}>
+                  {t.desc}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </Field>
+
+      <Field label="Theme" hint="Colour theme for the selected template's public site.">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {themeOpts.map(t => {
             const active = draft.theme === t.id
             return (
               <button
