@@ -67,10 +67,8 @@ export const DEFAULT_CONTENT = {
    safe to import from the Node server. All themes are dark by design: the
    analog "record shop" look assumes a dim canvas. */
 export const THEME_OPTIONS = [
-  { id: 'smoke',          label: 'Smoke & Whiskey', bg: '#161210', a: '#d18b2f', b: '#a2452e' },
-  { id: 'midnight-blues', label: 'Midnight Blues',  bg: '#0f141b', a: '#5aa0cc', b: '#cf8a3c' },
-  { id: 'bourbon',        label: 'Bourbon',         bg: '#1a120b', a: '#cb7a2e', b: '#8c3a1f' },
-  { id: 'gunmetal',       label: 'Gunmetal',        bg: '#14161a', a: '#c0392b', b: '#aab2bb' },
-  { id: 'bottle-green',   label: 'Bottle Green',    bg: '#0f1511', a: '#cba14a', b: '#b3532b' },
-  { id: 'oxblood',        label: 'Oxblood',         bg: '#18100f', a: '#cf9b53', b: '#97333a' },
+  { id: 'smoke',             label: 'Smoke & Whiskey',  bg: '#161210', a: '#d18b2f', b: '#a2452e' },
+  { id: 'midnight-sapphire', label: 'Midnight Sapphire', bg: '#0e1530', a: '#5b9bd8', b: '#c9913f' },
+  { id: 'emerald-gold',      label: 'Emerald & Gold',   bg: '#0b1a13', a: '#c9a44a', b: '#9f5a2a' },
+  { id: 'crimson-velvet',    label: 'Crimson Velvet',   bg: '#1e0c0f', a: '#c64b54', b: '#c89a4e' },
 ]
