@@ -1,21 +1,21 @@
 import { useContentStore } from '../store/contentStore'
 import { AnalogButton } from '../components/ui/AnalogButton'
 
-/* The Tip Jar — a letterpress poster taped up by the register. */
+/* The Tip Jar — a letterpress poster tacked up by the register. */
 export default function Support() {
   const donation = useContentStore((s) => s.donation)
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 md:px-6">
-      <div className="paper overflow-hidden rounded-md p-8 text-center md:p-14">
+      <div className="poster overflow-hidden rounded-md p-8 text-center md:p-14">
         <div className="relative z-[2]">
-          <div className="mb-6 font-mono text-[10px] uppercase tracking-[0.35em] text-paper-ink/60">
+          <div className="mb-6 font-mono text-[10px] uppercase tracking-[0.35em] text-muted">
             By the register
           </div>
-          <h1 className="font-display text-4xl font-bold uppercase leading-tight tracking-wide text-paper-ink md:text-5xl">
+          <h1 className="font-display text-4xl font-bold uppercase leading-tight tracking-wide text-text md:text-5xl">
             {donation.heading}
           </h1>
-          <p className="mx-auto mt-6 max-w-xl font-serif text-base italic leading-relaxed text-paper-ink/80">
+          <p className="mx-auto mt-6 max-w-xl font-serif text-base italic leading-relaxed text-muted">
             {donation.subtext}
           </p>
 
@@ -25,13 +25,13 @@ export default function Support() {
               {donation.why.map((w) => (
                 <div
                   key={w.title}
-                  className="border border-paper-ink/25 p-5 odd:-rotate-1 even:rotate-1"
+                  className="border border-line bg-bg-deep/30 p-5 odd:-rotate-1 even:rotate-1"
                 >
                   <div className="text-2xl">{w.icon}</div>
-                  <div className="mt-3 font-display text-sm font-semibold uppercase tracking-[0.12em] text-paper-ink">
+                  <div className="mt-3 font-display text-sm font-semibold uppercase tracking-[0.12em] text-text">
                     {w.title}
                   </div>
-                  <p className="mt-2 font-body text-xs leading-relaxed text-paper-ink/70">{w.text}</p>
+                  <p className="mt-2 font-body text-xs leading-relaxed text-muted">{w.text}</p>
                 </div>
               ))}
             </div>
@@ -46,7 +46,7 @@ export default function Support() {
           )}
 
           {donation.note && (
-            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-paper-ink/50">
+            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-muted/70">
               {donation.note}
             </p>
           )}

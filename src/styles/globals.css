@@ -203,6 +203,30 @@ body {
   border-radius: inherit;
 }
 
+/* Aged printed panel — dark themed cardstock with letterpress tooth and a
+   soft vignette, built from the themed surface tokens so it takes on each
+   theme's tone instead of sitting as a flat cream slab. Used for the
+   long-form sections (home liner teaser, About, Support). Put content in a
+   `relative z-[2]` wrapper so it rides above the texture. */
+.poster {
+  position: relative;
+  background: linear-gradient(168deg, var(--surface-2) 0%, var(--surface) 55%, var(--bg-deep) 100%);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(236, 226, 207, 0.06), 0 26px 54px -30px rgba(0, 0, 0, 0.85);
+}
+.poster::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(130% 120% at 50% 22%, transparent 52%, rgba(0, 0, 0, 0.42) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-size: auto, 190px 190px;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
 /* Ring wear — the ghost circle a record presses into its sleeve */
 .ring-wear::before {
   content: '';

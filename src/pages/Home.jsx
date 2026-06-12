@@ -142,18 +142,18 @@ export default function Home() {
 
       {/* ── Liner-notes teaser ──────────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-16 md:px-6">
-        <div className="paper overflow-hidden rounded-md p-8 md:p-12">
+        <div className="poster overflow-hidden rounded-md p-8 md:p-12">
           <div className="relative z-[2] grid items-center gap-8 md:grid-cols-[1fr_auto]">
             <div>
-              <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-paper-ink/60">
+              <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
                 {about.label}
               </div>
-              <blockquote className="max-w-2xl font-serif text-2xl italic leading-snug text-paper-ink md:text-3xl">
+              <blockquote className="max-w-2xl font-serif text-2xl italic leading-snug text-text md:text-3xl">
                 “{about.quote}”
               </blockquote>
               <Link
                 to="/about"
-                className="mt-6 inline-block border-b border-paper-ink/40 pb-0.5 font-mono text-[11px] uppercase tracking-[0.2em] text-paper-ink/80 hover:border-paper-ink hover:text-paper-ink"
+                className="mt-6 inline-block border-b border-line pb-0.5 font-mono text-[11px] uppercase tracking-[0.2em] text-muted hover:border-brass hover:text-accent"
               >
                 Read the liner notes
               </Link>
@@ -162,7 +162,7 @@ export default function Home() {
               <img
                 src={about.portraitUrl}
                 alt="Artist portrait"
-                className="relative z-[2] h-44 w-44 rotate-2 rounded-sm border-4 border-paper object-cover shadow-[0_12px_24px_rgba(34,27,18,0.4)] md:h-56 md:w-56"
+                className="relative z-[2] h-44 w-44 rotate-2 rounded-sm border-4 border-paper object-cover shadow-[0_18px_30px_rgba(0,0,0,0.5)] md:h-56 md:w-56"
               />
             )}
           </div>
