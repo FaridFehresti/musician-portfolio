@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Play } from 'lucide-react'
 import { useContentStore } from '../store/contentStore'
+import { usePlayerStore } from '../store/playerStore'
 import { usePlayFrom } from '../hooks/usePlayFrom'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { AnalogButton } from '../components/ui/AnalogButton'
@@ -20,6 +21,8 @@ export default function Home() {
   const tracks = useContentStore((s) => s.tracks)
   const navigate = useNavigate()
   const reduced = usePrefersReducedMotion()
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const isPlaying = usePlayerStore((s) => s.isPlaying)
 
   const heroTracks = useMemo(
     () => tracks.filter((t) => t.inHero && t.published !== false),
@@ -44,13 +47,27 @@ export default function Home() {
     <div>
       {/* ── Hero: the shop sign ─────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-line">
-        {/* oversized record rolling off-stage */}
+        {/* oversized record — tucked off-stage at rest, glides out and spins
+            with the playing track's cover on the label */}
         <div
-          className="grooves absolute -right-[20%] top-1/2 hidden aspect-square w-[55%] -translate-y-1/2 rounded-full border border-black/60 opacity-50 md:block"
-          style={reduced ? undefined : { animation: 'spin33 80s linear infinite' }}
+          className={`absolute top-1/2 hidden aspect-square w-[52%] -translate-y-1/2 transition-[right,opacity] duration-700 ease-out motion-reduce:transition-none md:block ${
+            isPlaying ? 'right-[-7%] opacity-95' : 'right-[-19%] opacity-70'
+          }`}
           aria-hidden="true"
         >
-          <div className="absolute left-1/2 top-1/2 h-[34%] w-[34%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-oxblood/80" />
+          <div
+            className={`grooves relative h-full w-full rounded-full border border-black/50 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.85)] ${!reduced ? 'animate-[spin33_8s_linear_infinite]' : ''}`}
+            style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}
+          >
+            {/* label — the current cover, or a blank oxblood pressing */}
+            <div className="absolute left-1/2 top-1/2 h-[32%] w-[32%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-2 border-bg-deep bg-oxblood">
+              {currentTrack?.coverArt && (
+                <img src={currentTrack.coverArt} alt="" className="h-full w-full object-cover" />
+              )}
+            </div>
+            {/* spindle */}
+            <div className="absolute left-1/2 top-1/2 h-[2.6%] w-[2.6%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper" />
+          </div>
         </div>
 
         <div className="relative z-[2] mx-auto max-w-7xl px-4 py-24 md:px-6 md:py-36">
