@@ -26,7 +26,7 @@ export function ConsoleBar() {
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div className="console-face noise-overlay fixed inset-x-0 bottom-0 z-50">
+    <div className="console-face fixed inset-x-0 bottom-0 z-50">
       {audioError && (
         <div className="border-b border-oxblood/50 bg-oxblood/20 px-4 py-1 text-center font-mono text-[11px] text-text">
           {audioError}
