@@ -1,17 +1,16 @@
 import { create } from 'zustand'
+import { THEME_OPTIONS } from '../lib/defaults'
 
-/* 5 themes, ordered light → dark. */
-export const THEMES = [
-  { id: 'aurora',    label: 'Aurora',    bg: '#f4f2fb', a: '#6d4dff', b: '#00b3c4' },
-  { id: 'sandstone', label: 'Sandstone', bg: '#ece4d6', a: '#b8430f', b: '#1f8a70' },
-  { id: 'slate',     label: 'Slate',     bg: '#2a303c', a: '#38bdf8', b: '#34d399' },
-  { id: 'midnight',  label: 'Midnight',  bg: '#0b1020', a: '#6d8bff', b: '#22d3ee' },
-  { id: 'synthwave', label: 'Synthwave', bg: '#0b0612', a: '#ff2fd0', b: '#00e5ff' },
-]
+/* Analog theme switcher. The list lives in defaults.js (server-safe, shared
+   with the CMS picker + the index.html pre-paint script); each id maps to an
+   html[data-theme='…'] block in globals.css. Selecting a theme writes the
+   attribute on <html> and persists it; the public site shows whatever theme
+   the admin saved (via contentStore.applySite → setTheme). */
+export const THEMES = THEME_OPTIONS
 
 const IDS = THEMES.map(t => t.id)
 const KEY = 'artist-portfolio-theme'
-const DEFAULT = 'midnight'
+const DEFAULT = 'smoke'
 
 function initialTheme() {
   if (typeof window === 'undefined') return DEFAULT

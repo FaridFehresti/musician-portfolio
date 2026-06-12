@@ -6,7 +6,7 @@
 export const DEFAULT_SITE = {
   artistName: 'Artist Name',
   tagline: 'Electronic · House · Techno · Ambient',
-  theme: 'midnight',
+  theme: 'smoke',
   logoUrl: null,
   logoHeight: 90,            // px height of the logo in the hero (when set)
   youtubeUrl: '',            // channel URL → "Go to YouTube" button in Videos section
@@ -60,11 +60,17 @@ export const DEFAULT_CONTENT = {
   donation: DEFAULT_DONATION,
 }
 
-/* Theme list mirrored for the CMS picker (kept in sync with themeStore). */
+/* Theme list — the single source of truth, consumed by themeStore (client),
+   the CMS picker (BrandingSection), and the index.html pre-paint script.
+   Each id has a matching html[data-theme='…'] block in globals.css. The
+   `bg / a / b` fields drive the three-dot swatch in the picker. Pure data —
+   safe to import from the Node server. All themes are dark by design: the
+   analog "record shop" look assumes a dim canvas. */
 export const THEME_OPTIONS = [
-  { id: 'aurora',    label: 'Aurora',    bg: '#f4f2fb', a: '#6d4dff', b: '#00b3c4' },
-  { id: 'sandstone', label: 'Sandstone', bg: '#ece4d6', a: '#b8430f', b: '#1f8a70' },
-  { id: 'slate',     label: 'Slate',     bg: '#2a303c', a: '#38bdf8', b: '#34d399' },
-  { id: 'midnight',  label: 'Midnight',  bg: '#0b1020', a: '#6d8bff', b: '#22d3ee' },
-  { id: 'synthwave', label: 'Synthwave', bg: '#0b0612', a: '#ff2fd0', b: '#00e5ff' },
+  { id: 'smoke',          label: 'Smoke & Whiskey', bg: '#161210', a: '#d18b2f', b: '#a2452e' },
+  { id: 'midnight-blues', label: 'Midnight Blues',  bg: '#0f141b', a: '#5aa0cc', b: '#cf8a3c' },
+  { id: 'bourbon',        label: 'Bourbon',         bg: '#1a120b', a: '#cb7a2e', b: '#8c3a1f' },
+  { id: 'gunmetal',       label: 'Gunmetal',        bg: '#14161a', a: '#c0392b', b: '#aab2bb' },
+  { id: 'bottle-green',   label: 'Bottle Green',    bg: '#0f1511', a: '#cba14a', b: '#b3532b' },
+  { id: 'oxblood',        label: 'Oxblood',         bg: '#18100f', a: '#cf9b53', b: '#97333a' },
 ]
