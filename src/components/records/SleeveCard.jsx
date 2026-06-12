@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Pause, Play } from 'lucide-react'
 import { usePlayerStore } from '../../store/playerStore'
 import { CrateToggle } from '../ui/CrateToggle'
+import { VinylDisc } from './VinylDisc'
 import { fmtDuration } from '../../data/tracks'
 
 /* A record sleeve on the shelf: full-bleed cover art with ring wear and
@@ -21,20 +22,15 @@ export function SleeveCard({ track, catNo, onPlay }) {
 
   return (
     <div className="group relative">
-      {/* vinyl sliding out of the jacket */}
-      <div
-        className="grooves absolute inset-0 rounded-full border border-bg-deep transition-transform duration-500 ease-out md:group-hover:translate-x-[16%]"
-        aria-hidden="true"
-      >
-        <div className="absolute left-1/2 top-1/2 flex h-[34%] w-[34%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-oxblood">
-          <div className="h-[12%] w-[12%] rounded-full bg-bg-deep" />
-        </div>
-      </div>
+      {/* the record, tucked behind the sleeve — constrained to the square so it
+          stays a true circle, and only peeks into the gutter on hover (never
+          over the neighbouring card) */}
+      <VinylDisc className="absolute left-0 top-0 aspect-square w-full transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none md:group-hover:translate-x-[13%]" />
 
       {/* the sleeve */}
       <Link
         to={`/track/${encodeURIComponent(track.id)}`}
-        className="ring-wear noise-overlay relative block aspect-square overflow-hidden rounded-sm border border-line bg-surface-2 shadow-[0_16px_22px_-14px_rgba(0,0,0,0.8)] transition-transform duration-500 ease-out md:group-hover:-translate-x-[5%]"
+        className="ring-wear noise-overlay relative block aspect-square overflow-hidden rounded-sm border border-line bg-surface-2 shadow-[0_16px_22px_-14px_rgba(0,0,0,0.8)]"
       >
         {track.coverArt ? (
           <img

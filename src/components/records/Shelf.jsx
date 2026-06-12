@@ -16,7 +16,7 @@ export function Shelf({ tracks, onPlay, columns = 'grid-cols-2 sm:grid-cols-3 lg
   }
 
   return (
-    <div className={`grid gap-x-6 gap-y-10 ${columns}`}>
+    <div className={`grid gap-x-10 gap-y-12 ${columns}`}>
       {tracks.map((t) => (
         <SleeveCard key={t.id} track={t} catNo={catalogNumber(t.id, allTracks)} onPlay={onPlay} />
       ))}

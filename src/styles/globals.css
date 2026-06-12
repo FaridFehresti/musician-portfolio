@@ -238,16 +238,18 @@ body {
   border-radius: inherit;
 }
 
-/* Vinyl surface — concentric grooves with a soft light sweep */
+/* Vinyl surface — glossy black with concentric grooves catching the light.
+   The two radial highlights are the room light reflecting off the record;
+   the higher-contrast groove stops make the grooves actually visible. */
 .grooves {
   background:
-    radial-gradient(circle at 35% 30%, rgba(236, 226, 207, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 36% 30%, rgba(236, 226, 207, 0.18) 0%, transparent 34%),
+    radial-gradient(circle at 68% 74%, rgba(236, 226, 207, 0.07) 0%, transparent 30%),
     repeating-radial-gradient(
       circle at 50% 50%,
-      #0c0a08 0px,
-      #14110e 1px,
-      #0c0a08 2px,
-      #100d0a 3px
+      #070605 0px,
+      #1c1712 1.6px,
+      #070605 3.2px
     );
 }
 

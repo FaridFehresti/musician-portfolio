@@ -10,6 +10,7 @@ import { StampTag } from '../components/ui/StampTag'
 import { CrateToggle } from '../components/ui/CrateToggle'
 import { ShareButton } from '../components/ui/ShareButton'
 import { TrackRow } from '../components/records/TrackRow'
+import { VinylDisc } from '../components/records/VinylDisc'
 
 /* The Pressing — one record pulled out of its sleeve, liner notes and all.
    Route path /track/:id is load-bearing: the server decorates it with OG
@@ -61,13 +62,8 @@ export default function Track() {
       <div className="grid items-start gap-10 lg:grid-cols-2">
         {/* the sleeve */}
         <div className="group relative mx-auto w-full max-w-lg">
-          <div
-            className="grooves absolute inset-0 rounded-full border border-bg-deep transition-transform duration-500 md:group-hover:translate-x-[12%]"
-            aria-hidden="true"
-          >
-            <div className="absolute left-1/2 top-1/2 h-[34%] w-[34%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-oxblood" />
-          </div>
-          <div className="ring-wear noise-overlay relative aspect-square overflow-hidden rounded-sm border border-line bg-surface-2 shadow-[0_28px_40px_-20px_rgba(0,0,0,0.85)] transition-transform duration-500 md:group-hover:-translate-x-[4%]">
+          <VinylDisc className="absolute inset-0 transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform md:group-hover:translate-x-[16%]" />
+          <div className="ring-wear noise-overlay relative aspect-square overflow-hidden rounded-sm border border-line bg-surface-2 shadow-[0_28px_40px_-20px_rgba(0,0,0,0.85)] transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform md:group-hover:-translate-x-[4%]">
             {track.coverArt ? (
               <img src={track.coverArt} alt={`${track.title} cover art`} className="h-full w-full object-cover" />
             ) : (

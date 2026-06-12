@@ -8,6 +8,7 @@ import { AnalogButton } from '../components/ui/AnalogButton'
 import { SectionHeading } from '../components/ui/SectionHeading'
 import { StampTag } from '../components/ui/StampTag'
 import { Shelf } from '../components/records/Shelf'
+import { VinylDisc } from '../components/records/VinylDisc'
 import { fmtDuration } from '../data/tracks'
 
 /* Front of House — the shop window: hero signage, the record on the platter
@@ -81,13 +82,8 @@ export default function Home() {
           <SectionHeading overline="Today's pick" title="On the Platter" />
           <div className="grid items-center gap-10 md:grid-cols-2">
             <div className="group relative mx-auto w-full max-w-md">
-              <div
-                className="grooves absolute inset-0 rounded-full border border-bg-deep transition-transform duration-500 md:group-hover:translate-x-[14%]"
-                aria-hidden="true"
-              >
-                <div className="absolute left-1/2 top-1/2 h-[34%] w-[34%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-oxblood" />
-              </div>
-              <div className="ring-wear noise-overlay relative aspect-square overflow-hidden rounded-sm border border-line bg-surface-2 shadow-[0_24px_32px_-18px_rgba(0,0,0,0.85)] transition-transform duration-500 md:group-hover:-translate-x-[5%]">
+              <VinylDisc className="absolute inset-0 transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform md:group-hover:translate-x-[18%]" />
+              <div className="ring-wear noise-overlay relative aspect-square overflow-hidden rounded-sm border border-line bg-surface-2 shadow-[0_24px_32px_-18px_rgba(0,0,0,0.85)] transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform md:group-hover:-translate-x-[6%]">
                 {spotlight.coverArt ? (
                   <img src={spotlight.coverArt} alt={`${spotlight.title} cover art`} className="h-full w-full object-cover" />
                 ) : (
