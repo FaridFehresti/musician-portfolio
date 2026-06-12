@@ -1,219 +1,109 @@
-import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
 import { useContentStore } from '../store/contentStore'
+import { StampTag } from '../components/ui/StampTag'
 import { SocialIcon } from '../components/icons/SocialIcons'
 
-const FADE_UP = {
-  hidden:  { opacity: 0, y: 20 },
-  visible: (d = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] } }),
-}
-
+/* Liner Notes — the about page set like the back of a gatefold sleeve:
+   cream paper, serif pull-quote, a taped-in portrait, two-column notes. */
 export default function About() {
-  const site    = useContentStore(s => s.site)
-  const about   = useContentStore(s => s.about)
-  const socials = useContentStore(s => s.socials)
-  const links   = useContentStore(s => s.links)
-  const GENRE_LABELS = about.genres || []
+  const about = useContentStore((s) => s.about)
+  const links = useContentStore((s) => s.links)
+  const socials = useContentStore((s) => s.socials)
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: 'var(--color-bg)', paddingTop: 100, paddingBottom: 120 }}
-    >
-      <div className="max-w-5xl mx-auto px-6 sm:px-10">
+    <div className="mx-auto max-w-5xl px-4 py-12 md:px-6">
+      <div className="paper overflow-hidden rounded-md p-8 md:p-14">
+        <div className="relative z-[2]">
+          {/* label stamp */}
+          <div className="mb-10 flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-paper-ink/60">
+              {about.label}
+            </span>
+            <span className="hidden -rotate-3 border border-oxblood/60 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.2em] text-oxblood sm:block">
+              Original pressing
+            </span>
+          </div>
 
-        {/* ── Hero quote ───────────────────────────────────────────── */}
-        <motion.div
-          variants={FADE_UP} initial="hidden" animate="visible" custom={0}
-          className="mb-24 text-center"
-        >
-          <p style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11,
-            color: 'var(--color-muted)', letterSpacing: '0.2em',
-            textTransform: 'uppercase', marginBottom: 20,
-          }}>
-            {about.label}
-          </p>
-          <h1 style={{
-            fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 900,
-            fontSize: 'clamp(32px, 6vw, 76px)', color: 'var(--color-text)',
-            lineHeight: 1.05, marginBottom: 24, letterSpacing: '-0.02em',
-          }}>
-            “{about.quote}”
-          </h1>
-          <p style={{ color: 'var(--color-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-            — {site.artistName || 'Artist Name'}
-          </p>
-        </motion.div>
+          <div className="grid gap-10 md:grid-cols-[1fr_auto]">
+            <blockquote className="font-serif text-3xl italic leading-snug text-paper-ink md:text-4xl">
+              “{about.quote}”
+            </blockquote>
 
-        {/* ── Bio + portrait ───────────────────────────────────────── */}
-        <div
-          className="mb-24"
-          style={{ display: 'grid', gap: 48, gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.5fr)', alignItems: 'center' }}
-        >
-          {/* Portrait placeholder */}
-          <motion.div
-            variants={FADE_UP} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}
-          >
-            <div style={{
-              aspectRatio: '1', borderRadius: 12, overflow: 'hidden',
-              boxShadow: '0 24px 70px rgba(0,0,0,0.8), 0 0 0 1px color-mix(in srgb, var(--accent-2) 10%, transparent)',
-              background: 'linear-gradient(145deg, #1a1208, #0a0a0a)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative',
-            }}>
-              {about.portraitUrl ? (
-                <img src={about.portraitUrl} alt={site.artistName || 'Portrait'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <>
-                  <svg width="55%" height="55%" viewBox="0 0 200 200" opacity="0.11">
-                    {[90, 78, 66, 54, 42, 30, 18].map(r => (
-                      <circle key={r} cx="100" cy="100" r={r}
-                        fill="none" stroke="var(--accent)" strokeWidth="0.8" />
-                    ))}
-                    <circle cx="100" cy="100" r="8" fill="var(--accent)" opacity="0.4" />
-                  </svg>
-                  <p style={{
-                    position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center',
-                    fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                    fontSize: 13, color: 'color-mix(in srgb, var(--accent-2) 35%, transparent)',
-                  }}>
-                    Add your photo here
-                  </p>
-                </>
-              )}
-            </div>
-          </motion.div>
+            {about.portraitUrl && (
+              <div className="relative mx-auto shrink-0">
+                {/* tape strips */}
+                <span className="absolute -top-3 left-1/2 z-[3] h-6 w-20 -translate-x-1/2 -rotate-2 bg-paper-ink/10 backdrop-blur-[1px]" />
+                <img
+                  src={about.portraitUrl}
+                  alt="Artist portrait"
+                  className="relative z-[2] h-52 w-52 -rotate-1 border-8 border-[#f4ecda] object-cover shadow-[0_14px_28px_rgba(34,27,18,0.45)] md:h-64 md:w-64"
+                />
+              </div>
+            )}
+          </div>
 
-          {/* Bio text */}
-          <motion.div
-            variants={FADE_UP} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0.12}
-            className="flex flex-col gap-5"
-          >
-            {(about.bio || []).map((para, i) => (
-              <p key={i} style={{
-                color: i === 0 ? 'var(--color-text)' : 'var(--color-muted)',
-                fontSize: i === 0 ? 16 : 15, lineHeight: 1.85, fontFamily: 'var(--font-body)',
-              }}>
+          {/* the notes */}
+          <div className="mt-12 border-t border-paper-ink/20 pt-10 font-body text-[15px] leading-relaxed text-paper-ink/90 md:columns-2 md:gap-10">
+            {about.bio.map((para, i) => (
+              <p key={i} className="mb-5 break-inside-avoid">
                 {para}
               </p>
             ))}
+          </div>
 
-            {/* Socials */}
-            <div className="flex flex-wrap gap-3 mt-2">
-              {socials.map(({ label, icon, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 16px', borderRadius: 20,
-                    border: '1px solid rgba(240,236,224,0.1)',
-                    background: 'var(--color-surface)', color: 'var(--color-muted)',
-                    fontFamily: 'var(--font-mono)', fontSize: 11,
-                    textDecoration: 'none', letterSpacing: '0.06em',
-                    transition: 'border-color 0.2s, color 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent-2) 40%, transparent)' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.borderColor = 'rgba(240,236,224,0.1)' }}
-                >
-                  <span style={{
-                    width: 22, height: 22, borderRadius: '50%',
-                    background: 'color-mix(in srgb, var(--accent-2) 12%, transparent)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--color-accent)', flexShrink: 0,
-                  }}>
-                    <SocialIcon name={icon} size={13} />
-                  </span>
-                  {label}
-                </a>
+          {/* genre stamps */}
+          {about.genres?.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-2">
+              {about.genres.map((g) => (
+                <StampTag key={g} tone="paper">{g}</StampTag>
               ))}
             </div>
+          )}
 
-            {/* Custom links (shop, press kit, …) */}
-            {links.length > 0 && (
-              <div className="flex flex-wrap gap-3">
-                {links.map(({ label, href }) => (
-                  <a key={label + href} href={href} target="_blank" rel="noopener noreferrer"
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '7px 16px', borderRadius: 20,
-                      border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)',
-                      background: 'transparent', color: 'var(--color-accent)',
-                      fontFamily: 'var(--font-mono)', fontSize: 11,
-                      textDecoration: 'none', letterSpacing: '0.06em',
-                    }}
+          {/* press / stockists */}
+          {links.length > 0 && (
+            <div className="mt-12 border-t border-paper-ink/20 pt-8">
+              <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-paper-ink/60">
+                Press &amp; stockists
+              </div>
+              <div className="flex flex-col gap-2">
+                {links.map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-fit border-b border-paper-ink/30 font-serif text-sm text-paper-ink/90 hover:border-paper-ink hover:text-paper-ink"
                   >
-                    ↗ {label}
+                    {l.label}
                   </a>
                 ))}
               </div>
-            )}
-          </motion.div>
+            </div>
+          )}
+
+          {/* socials */}
+          {socials.length > 0 && (
+            <div className="mt-12 flex items-center gap-3 border-t border-paper-ink/20 pt-8">
+              <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-paper-ink/60">
+                Elsewhere
+              </span>
+              <div className="flex gap-2">
+                {socials.map((s) => (
+                  <a
+                    key={s.href}
+                    href={s.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={s.label}
+                    className="flex h-9 w-9 items-center justify-center rounded-sm border border-paper-ink/30 text-paper-ink/70 transition-colors hover:border-paper-ink hover:text-paper-ink"
+                  >
+                    <SocialIcon name={s.icon} size={15} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* ── Genre tags ───────────────────────────────────────────── */}
-        <motion.div
-          variants={FADE_UP} initial="hidden" whileInView="visible" viewport={{ once: true }}
-          className="mb-24"
-        >
-          <div style={{ width: 48, height: 1, background: 'color-mix(in srgb, var(--accent-2) 20%, transparent)', marginBottom: 28 }} />
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 18 }}>
-            The Sound
-          </p>
-          <div className="flex flex-wrap" style={{ gap: '12px 24px' }}>
-            {GENRE_LABELS.map((g, i) => (
-              <motion.span
-                key={g}
-                initial={{ opacity: 0, x: -12 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.07, duration: 0.5 }}
-                style={{
-                  fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                  fontSize: 'clamp(20px, 3vw, 36px)',
-                  color: i % 2 === 0 ? 'var(--color-text)' : 'rgba(240,236,224,0.28)',
-                  lineHeight: 1.2,
-                }}
-              >
-                {g}
-              </motion.span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* ── CTA ──────────────────────────────────────────────────── */}
-        <motion.div
-          variants={FADE_UP} initial="hidden" whileInView="visible" viewport={{ once: true }}
-          className="flex flex-col sm:flex-row gap-4"
-        >
-          <Link to="/library">
-            <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
-              style={{
-                padding: '13px 34px', borderRadius: 40,
-                background: 'var(--color-accent)', color: '#0a0a0a',
-                border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: 11,
-                fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase',
-              }}
-            >
-              Browse All Music
-            </motion.button>
-          </Link>
-          <Link to="/donate">
-            <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
-              style={{
-                padding: '13px 34px', borderRadius: 40,
-                background: 'transparent', color: 'var(--color-accent)',
-                border: '1px solid color-mix(in srgb, var(--accent-2) 40%, transparent)', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: 11,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-              }}
-            >
-              Support the Artist
-            </motion.button>
-          </Link>
-        </motion.div>
       </div>
     </div>
   )

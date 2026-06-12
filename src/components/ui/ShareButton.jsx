@@ -1,85 +1,27 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
+import { Check, Share2 } from 'lucide-react'
 import { shareTrack } from '../../lib/share'
 
-/* Share control for a track. Click → OS share sheet (mobile) or copy link
-   (desktop), then briefly confirms with a check / "Link copied". Two looks:
-   icon-only (default) for tight rows like the deck cards, and a labelled pill
-   (pass `label`) for prominent spots like Now Playing. */
-export function ShareButton({
-  track,
-  label,
-  size = 24,
-  iconSize = 16,
-  color = 'rgba(255,255,255,0.55)',
-  activeColor = 'var(--neon-cyan)',
-  title = 'Share track',
-}) {
-  const [done, setDone] = useState(false)
-  const timer = useRef(0)
-  useEffect(() => () => clearTimeout(timer.current), [])
+/* Per-track share: OS share sheet on mobile, clipboard on desktop.
+   The /track/:id link unfurls with cover art via the server's OG tags. */
+export function ShareButton({ track }) {
+  const [status, setStatus] = useState(null)
 
-  async function onClick(e) {
-    e.stopPropagation()
-    const status = await shareTrack(track)
-    if (status === 'shared' || status === 'copied') {
-      setDone(true)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setDone(false), 1600)
+  async function onShare() {
+    const result = await shareTrack(track)
+    if (result === 'copied') {
+      setStatus('copied')
+      setTimeout(() => setStatus(null), 2000)
     }
-  }
-
-  if (label) {
-    return (
-      <button
-        onClick={onClick}
-        aria-label={title}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 999,
-          background: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
-          border: `1px solid color-mix(in srgb, var(--neon-magenta) ${done ? 70 : 38}%, transparent)`,
-          color: done ? 'var(--neon-magenta)' : 'var(--color-text)',
-          fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.06em', cursor: 'pointer',
-          backdropFilter: 'blur(8px)', transition: 'color 0.18s, border-color 0.18s',
-        }}
-      >
-        {done ? <CheckIcon size={15} /> : <ShareIcon size={15} />}
-        {done ? 'Link copied' : label}
-      </button>
-    )
   }
 
   return (
     <button
-      onClick={onClick}
-      aria-label={title}
-      title={done ? 'Link copied!' : title}
-      style={{
-        flexShrink: 0, width: size, height: size, borderRadius: '50%', border: 'none',
-        background: 'transparent', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: done ? activeColor : color, transition: 'color 0.18s',
-      }}
+      onClick={onShare}
+      className="inline-flex items-center gap-2 rounded-sm border border-line px-4 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted transition-colors hover:border-brass hover:text-text"
     >
-      {done ? <CheckIcon size={iconSize} /> : <ShareIcon size={iconSize} />}
+      {status === 'copied' ? <Check size={13} /> : <Share2 size={13} />}
+      {status === 'copied' ? 'Link copied' : 'Share'}
     </button>
-  )
-}
-
-function ShareIcon({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-      <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-    </svg>
-  )
-}
-
-function CheckIcon({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 12.5l5 5 11-11" />
-    </svg>
   )
 }
