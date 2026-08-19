@@ -16,7 +16,7 @@ import {
  * outline between beats so the border visibly thumps with the low end.
  * ──────────────────────────────────────────────────────────────────────── */
 
-const easeOutSine = t => Math.sin((t * Math.PI) / 2)
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3)
 
 /* Trace the body outline offset outward by `d` as one closed path.
    Strokes accumulate on this path, so callers stroke it multiple times. */

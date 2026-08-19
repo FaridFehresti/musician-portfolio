@@ -297,6 +297,12 @@ app.use((err, _req, res, _next) => {
   if (err?.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: `File is too large (max ${MAX_UPLOAD_MB} MB).` })
   }
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' })
+  }
+  if (err?.type === 'request.aborted' || err?.code === 'ECONNABORTED' || err?.message === 'Request aborted') {
+    return res.status(400).json({ error: 'Request aborted' })
+  }
   console.error('[api] error:', err?.message || err)
   res.status(err?.status || 500).json({ error: err?.message || 'server error' })
 })

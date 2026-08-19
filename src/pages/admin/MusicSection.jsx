@@ -53,7 +53,7 @@ export function MusicSection({ site, onSaved, onChanged }) {
     setTracks(await api.reorderTracks(order))
     notify()
   }
-  function onSaved(saved, isNew) {
+  function handleTrackSaved(saved, isNew) {
     setTracks(ts => (isNew ? [...(ts || []), saved] : ts.map(t => (t.id === saved.id ? saved : t))))
     notify()
   }
@@ -165,7 +165,7 @@ export function MusicSection({ site, onSaved, onChanged }) {
         <TrackModal
           track={modal === 'new' ? null : modal}
           onClose={() => setModal(null)}
-          onSaved={onSaved}
+          onSaved={handleTrackSaved}
         />
       )}
     </>

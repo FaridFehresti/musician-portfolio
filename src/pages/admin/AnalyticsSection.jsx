@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../lib/api'
-import { Panel, Btn } from './ui'
+import { Panel } from './ui'
 
 /* Streams dashboard for the client: all-time + windowed totals, a daily bar
    chart, and a per-track breakdown. Data comes from /api/admin/analytics,
