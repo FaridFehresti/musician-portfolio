@@ -631,8 +631,8 @@ function QueueFan({ cards, scale, allTracks }) {
             key={track.id}
             onMouseEnter={() => setHover(i)}
             initial={{ opacity: 0, y: 70 }}
-            animate={{ opacity: 1, x: t * stepX, y: dropAt(t), rotate: t * perDeg }}
-            exit={{ opacity: 0, y: 64, scale: 0.9, transition: { duration: 0.22 } }}
+            animate={{ opacity: 1, x: t * stepX, y: dropAt(t), rotate: t * perDeg, scale: 1 }}
+            exit={{ opacity: 0, y: 64, transition: { duration: 0.22 } }}
             transition={{ ...FAN_SPRING, delay: hover === null ? 0.05 * i : 0 }}
             style={{
               position: 'absolute', top: 40, left: `calc(50% - ${w / 2}px)`,

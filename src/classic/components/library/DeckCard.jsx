@@ -374,8 +374,8 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true, inDeck =
       // otherwise ping-pongs mouseenter/leave on the overlapping siblings.
       layout={!inDeck}
       initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: inDeck ? 1 : 0.9 }}
       whileHover={inDeck ? undefined : { y: -8, zIndex: 30 }}
       transition={{ type: 'spring', stiffness: 260, damping: 22 }}
       style={{ width: CARD_W, height: CARD_H, position: 'relative', zIndex: isActive ? 20 : 1 }}
