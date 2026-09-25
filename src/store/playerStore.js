@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Howl, Howler } from 'howler'
 import { api } from '../lib/api'
+import { ListenTracker } from '../lib/listenTracker'
 
 /* ── Global Howler config ─────────────────────────────────────────── */
 Howler.autoSuspend  = false   // never suspend AudioContext
@@ -16,7 +17,11 @@ function startTick(get) {
   clearTick()
   tickInterval = setInterval(() => {
     const h = get().howl
-    if (h?.playing()) set_ref({ currentTime: h.seek() ?? 0 })
+    if (h?.playing()) {
+      const position = h.seek() ?? 0
+      get().listenTracker?.tick(position, performance.now())
+      set_ref({ currentTime: position })
+    }
   }, 250)
 }
 
@@ -48,6 +53,7 @@ export const usePlayerStore = create((set, get) => {
     duration:     0,
     howl:         null,
     audioError:   null,   // holds a user-visible error string
+    listenTracker: null,
 
     /* ── Actions ────────────────────────────────────────────────── */
 
@@ -63,14 +69,16 @@ export const usePlayerStore = create((set, get) => {
       if (!track.src) {
         set({
           currentTrack: track,
-          howl: null, isPlaying: false, isPaused: false,
+          howl: null, listenTracker: null, isPlaying: false, isPaused: false,
           currentTime: 0, duration: track.duration || 0,
           queueIndex: get().queue.findIndex(t => t.id === track.id),
         })
         return
       }
 
-      let streamCounted = false   // one stream per loaded track (not per resume)
+      const tracker = new ListenTracker(track.id, event => {
+        Promise.resolve(api.recordEvent(event)).catch(() => {})
+      })
 
       const newHowl = new Howl({
         src:   [track.src],
@@ -80,25 +88,25 @@ export const usePlayerStore = create((set, get) => {
 
         onplay() {
           set({ isPlaying: true, isPaused: false, audioError: null })
+          tracker.start(newHowl.seek() || 0, performance.now())
           startTick(get)
-          if (!streamCounted) {
-            streamCounted = true
-            // fire-and-forget; analytics must never disrupt playback
-            if (track.id) Promise.resolve(api.recordPlay(track.id)).catch(() => {})
-          }
         },
 
         onpause() {
+          tracker.pause(newHowl.seek() || 0, performance.now())
           set({ isPlaying: false, isPaused: true })
           clearTick()
         },
 
         onstop() {
+          tracker.pause(newHowl.seek() || 0, performance.now())
+          tracker.reset()
           set({ isPlaying: false, isPaused: false, currentTime: 0 })
           clearTick()
         },
 
         onend() {
+          tracker.finish(newHowl.duration(), newHowl.duration(), performance.now())
           set({ isPlaying: false, isPaused: false, currentTime: 0 })
           clearTick()
           const { repeat, shuffle, queue, queueIndex } = get()
@@ -136,6 +144,7 @@ export const usePlayerStore = create((set, get) => {
       set({
         currentTrack: track,
         howl:         newHowl,
+        listenTracker: tracker,
         isPlaying:    false,
         isPaused:     false,
         currentTime:  0,
@@ -164,6 +173,7 @@ export const usePlayerStore = create((set, get) => {
       const { howl } = get()
       if (!howl) return
       howl.seek(seconds)
+      get().listenTracker?.seek(seconds, performance.now())
       set({ currentTime: seconds })
     },
 
@@ -184,7 +194,12 @@ export const usePlayerStore = create((set, get) => {
     prev() {
       const { queue, queueIndex, currentTime, howl, shuffle, loadTrack } = get()
       if (!queue.length) return
-      if (currentTime > 3) { howl?.seek(0); set({ currentTime: 0 }); return }
+      if (currentTime > 3) {
+        howl?.seek(0)
+        get().listenTracker?.seek(0, performance.now())
+        set({ currentTime: 0 })
+        return
+      }
       const i = shuffle
         ? randomOther(queue.length, queueIndex)
         : ((queueIndex - 1) + queue.length) % queue.length

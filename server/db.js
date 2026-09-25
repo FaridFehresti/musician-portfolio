@@ -40,7 +40,11 @@ db.exec(`
     inLibrary  INTEGER DEFAULT 1,
     published  INTEGER DEFAULT 1,
     homeSlot   TEXT DEFAULT '',
-    sort       INTEGER DEFAULT 0
+    sort       INTEGER DEFAULT 0,
+    shareTitle TEXT DEFAULT '',
+    shareDescription TEXT DEFAULT '',
+    shareImage TEXT DEFAULT '',
+    sharePostText TEXT DEFAULT ''
   );
 `)
 
@@ -48,6 +52,9 @@ db.exec(`
 {
   const cols = db.prepare('PRAGMA table_info(tracks)').all().map(c => c.name)
   if (!cols.includes('homeSlot')) db.exec("ALTER TABLE tracks ADD COLUMN homeSlot TEXT DEFAULT ''")
+  for (const col of ['shareTitle', 'shareDescription', 'shareImage', 'sharePostText']) {
+    if (!cols.includes(col)) db.exec(`ALTER TABLE tracks ADD COLUMN ${col} TEXT DEFAULT ''`)
+  }
 }
 
 /* Stream log — one row per play. Additive (CREATE … IF NOT EXISTS), so it
@@ -62,6 +69,19 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_plays_trackId ON plays(trackId);
   CREATE INDEX IF NOT EXISTS idx_plays_ts ON plays(ts);
+  CREATE TABLE IF NOT EXISTS engagement_events (
+    id          TEXT PRIMARY KEY,
+    playbackId  TEXT,
+    type        TEXT NOT NULL,
+    trackId     TEXT,
+    destination TEXT,
+    label       TEXT,
+    ts          INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_engagement_playback_type
+    ON engagement_events(playbackId, type) WHERE playbackId IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_engagement_ts ON engagement_events(ts);
+  CREATE INDEX IF NOT EXISTS idx_engagement_track ON engagement_events(trackId);
 `)
 
 /* ── Settings (JSON blobs) ─────────────────────────────────────────── */
@@ -85,6 +105,7 @@ export function setSetting(key, value) {
 const TRACK_COLS = [
   'id', 'title', 'artist', 'album', 'genre', 'duration', 'year',
   'src', 'coverArt', 'video', 'inHero', 'inFeatured', 'inLibrary', 'published', 'homeSlot', 'sort',
+  'shareTitle', 'shareDescription', 'shareImage', 'sharePostText',
 ]
 const BOOL_COLS = new Set(['inHero', 'inFeatured', 'inLibrary', 'published'])
 
@@ -149,51 +170,137 @@ export function recordPlay(trackId, ts = Date.now()) {
   insertPlayStmt.run(String(trackId), Math.round(ts))
 }
 
+const insertEventStmt = db.prepare(`
+  INSERT OR IGNORE INTO engagement_events (id, playbackId, type, trackId, destination, label, ts)
+  VALUES (@id, @playbackId, @type, @trackId, @destination, @label, @ts)
+`)
+
+export function recordEvent(event, ts = Date.now()) {
+  return insertEventStmt.run({
+    id: event.id, playbackId: event.playbackId || null,
+    type: event.type, trackId: event.trackId || null,
+    destination: event.destination || null, label: event.label || null,
+    ts: Math.round(ts),
+  }).changes > 0
+}
+
 /* Dashboard payload: all-time + windowed totals, per-track breakdown (joined
    to live track metadata), and a gap-filled daily series for the chart. */
 export function getAnalytics({ days = 30 } = {}) {
   const safeDays = Math.min(365, Math.max(1, Math.round(days) || 30))
   const total = db.prepare('SELECT COUNT(*) AS n FROM plays').get().n
+  const since = Date.parse(new Date(Date.now() - (safeDays - 1) * 86400000).toISOString().slice(0, 10) + 'T00:00:00Z')
+  const previousSince = since - safeDays * 86400000
+  const emptyCounts = () => ({ starts: 0, trackedStarts: 0, listens: 0, completions: 0, shares: 0, clicks: 0 })
+  const keyFor = { start: 'starts', listen: 'listens', complete: 'completions', share: 'shares', outbound: 'clicks' }
+  const totals = emptyCounts()
+  const window = emptyCounts()
+  const previous = emptyCounts()
+  const byTrack = new Map()
+  const byTrackWindow = new Map()
+  const byTrackPrevious = new Map()
+  const byDay = new Map()
+  const byPreviousDay = new Map()
+  const trackCounts = id => {
+    if (!byTrack.has(id)) byTrack.set(id, emptyCounts())
+    return byTrack.get(id)
+  }
+  const dayCounts = day => {
+    if (!byDay.has(day)) byDay.set(day, emptyCounts())
+    return byDay.get(day)
+  }
+  const getCounts = (map, key) => {
+    if (!map.has(key)) map.set(key, emptyCounts())
+    return map.get(key)
+  }
+  for (const row of db.prepare('SELECT trackId, COUNT(*) AS n FROM plays GROUP BY trackId').all()) {
+    totals.starts += row.n
+    trackCounts(row.trackId).starts += row.n
+  }
+  for (const row of db.prepare("SELECT trackId, strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(*) AS n FROM plays WHERE ts >= ? GROUP BY trackId, day").all(since)) {
+    window.starts += row.n
+    dayCounts(row.day).starts += row.n
+    getCounts(byTrackWindow, row.trackId).starts += row.n
+  }
+  for (const row of db.prepare("SELECT trackId, strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(*) AS n FROM plays WHERE ts >= ? AND ts < ? GROUP BY trackId, day").all(previousSince, since)) {
+    previous.starts += row.n
+    getCounts(byPreviousDay, row.day).starts += row.n
+    getCounts(byTrackPrevious, row.trackId).starts += row.n
+  }
+  for (const row of db.prepare('SELECT type, trackId, COUNT(*) AS n FROM engagement_events GROUP BY type, trackId').all()) {
+    const metric = keyFor[row.type]
+    if (!metric) continue
+    totals[metric] += row.n
+    if (row.type === 'start') totals.trackedStarts += row.n
+    if (row.trackId) {
+      trackCounts(row.trackId)[metric] += row.n
+      if (row.type === 'start') trackCounts(row.trackId).trackedStarts += row.n
+    }
+  }
+  for (const row of db.prepare("SELECT type, trackId, strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(*) AS n FROM engagement_events WHERE ts >= ? GROUP BY type, trackId, day").all(since)) {
+    const metric = keyFor[row.type]
+    if (!metric) continue
+    window[metric] += row.n
+    dayCounts(row.day)[metric] += row.n
+    if (row.trackId) getCounts(byTrackWindow, row.trackId)[metric] += row.n
+    if (row.type === 'start') {
+      window.trackedStarts += row.n
+      dayCounts(row.day).trackedStarts += row.n
+      if (row.trackId) getCounts(byTrackWindow, row.trackId).trackedStarts += row.n
+    }
+  }
+  for (const row of db.prepare("SELECT type, trackId, strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(*) AS n FROM engagement_events WHERE ts >= ? AND ts < ? GROUP BY type, trackId, day").all(previousSince, since)) {
+    const metric = keyFor[row.type]
+    if (!metric) continue
+    previous[metric] += row.n
+    getCounts(byPreviousDay, row.day)[metric] += row.n
+    if (row.trackId) getCounts(byTrackPrevious, row.trackId)[metric] += row.n
+    if (row.type === 'start') {
+      previous.trackedStarts += row.n
+      getCounts(byPreviousDay, row.day).trackedStarts += row.n
+      if (row.trackId) getCounts(byTrackPrevious, row.trackId).trackedStarts += row.n
+    }
+  }
+  const outbound = db.prepare("SELECT destination, label, COUNT(*) AS clicks FROM engagement_events WHERE ts >= ? AND type = 'outbound' GROUP BY destination, label ORDER BY clicks DESC").all(since)
 
   const byId = new Map(listTracks().map(t => [t.id, t]))
-  const perTrack = db.prepare(`
-    SELECT trackId, COUNT(*) AS streams, MAX(ts) AS lastPlayed
-    FROM plays GROUP BY trackId ORDER BY streams DESC, lastPlayed DESC
-  `).all().map(r => {
-    const t = byId.get(r.trackId)
+  const perTrack = [...byTrack.entries()].map(([id, counts]) => {
+    const t = byId.get(id)
     return {
-      id: r.trackId,
+      id,
       title:    t?.title  || '(deleted track)',
       artist:   t?.artist || '',
       coverArt: t?.coverArt || '',
       exists:   !!t,
-      streams:  r.streams,
-      lastPlayed: r.lastPlayed,
+      ...counts,
+      window: byTrackWindow.get(id) || emptyCounts(),
+      previous: byTrackPrevious.get(id) || emptyCounts(),
     }
-  })
-
-  const since = Date.now() - (safeDays - 1) * 86400000
-  const rows = db.prepare(`
-    SELECT strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(*) AS streams
-    FROM plays WHERE ts >= ? GROUP BY day
-  `).all(since)
-  const byDay = new Map(rows.map(r => [r.day, r.streams]))
+  }).sort((a, b) => b.listens - a.listens || b.starts - a.starts)
 
   const daily = []
+  const previousDaily = []
   const cursor = new Date(since)
+  const previousCursor = new Date(previousSince)
   for (let i = 0; i < safeDays; i++) {
     const key = cursor.toISOString().slice(0, 10)
-    daily.push({ day: key, streams: byDay.get(key) || 0 })
+    daily.push({ day: key, ...(byDay.get(key) || emptyCounts()) })
     cursor.setUTCDate(cursor.getUTCDate() + 1)
+    const previousKey = previousCursor.toISOString().slice(0, 10)
+    previousDaily.push({ day: previousKey, ...(byPreviousDay.get(previousKey) || emptyCounts()) })
+    previousCursor.setUTCDate(previousCursor.getUTCDate() + 1)
   }
 
   return {
     total,
     days: safeDays,
-    windowStreams: daily.reduce((a, d) => a + d.streams, 0),
+    totals, window, previous,
+    historicalStarts: total,
+    trackingSince: db.prepare('SELECT MIN(ts) AS ts FROM engagement_events').get().ts,
     tracksPlayed: perTrack.length,
     perTrack,
-    daily,
+    daily, previousDaily,
+    outbound,
   }
 }
 

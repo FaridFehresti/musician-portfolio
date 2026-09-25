@@ -41,7 +41,7 @@ export default function Videos() {
 
       {createPortal(
         <AnimatePresence>
-          {open && <VideoLightbox url={open.video} title={open.title} onClose={() => setOpen(null)} />}
+          {open && <VideoLightbox url={open.video} title={open.title} trackId={open.id} onClose={() => setOpen(null)} />}
         </AnimatePresence>,
         document.body,
       )}

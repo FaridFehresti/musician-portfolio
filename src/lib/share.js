@@ -1,3 +1,5 @@
+import { recordShare } from './engagement'
+
 /* Shareable per-track permalinks. `trackUrl` builds the link; `shareTrack`
    hands it to the OS share sheet (mobile) or the clipboard (desktop) and
    returns a status the UI can reflect: 'shared' | 'copied' | 'cancelled' |
@@ -17,13 +19,16 @@ export async function shareTrack(track) {
   if (typeof navigator !== 'undefined' && navigator.share) {
     try {
       await navigator.share({ title, text: `Listen to ${title}`, url })
+      recordShare(track.id)
       return 'shared'
     } catch (e) {
       if (e?.name === 'AbortError') return 'cancelled'
       // any other share failure → fall through to clipboard
     }
   }
-  return copyToClipboard(url)
+  const result = await copyToClipboard(url)
+  if (result === 'copied') recordShare(track.id)
+  return result
 }
 
 async function copyToClipboard(url) {

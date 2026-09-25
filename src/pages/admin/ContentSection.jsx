@@ -24,7 +24,7 @@ function RowList({ items, columns, onChange, blank, addLabel }) {
   return (
     <div>
       {list.map((it, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+        <div key={i} className="admin-editor-row" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
           {columns.map(col => (
             <input
               key={col.key}
@@ -116,9 +116,9 @@ export function SocialsSection({ socials, onSaved }) {
   }
 
   return (
-    <Panel title="Social links" desc="Pick a platform icon, set the label and URL. Shown on the About page." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
+    <Panel title="Social links" desc="Where people can find you." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
       {list.map((it, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+        <div key={i} className="admin-editor-row" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
           <span style={{
             width: 36, height: 36, flexShrink: 0, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'var(--color-bg)', border: '1px solid color-mix(in srgb, var(--text) 14%, transparent)', color: 'var(--color-accent)',
@@ -144,7 +144,7 @@ export function SocialsSection({ socials, onSaved }) {
 export function LinksSection({ links, onSaved }) {
   const { draft, setDraft, dirty, saving, savedAt, save } = useEditor('links', links, onSaved)
   return (
-    <Panel title="Custom links" desc="Extra links (shop, press kit, merch…). Shown on the About page." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
+    <Panel title="Custom links" desc="Add a shop, press kit, or other destination." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
       <RowList
         items={draft}
         onChange={setDraft}
@@ -163,7 +163,7 @@ export function LinksSection({ links, onSaved }) {
 export function DonationSection({ donation, onSaved }) {
   const { draft, set, setDraft, dirty, saving, savedAt, save } = useEditor('donation', donation, onSaved)
   return (
-    <Panel title="Donations" desc="The Support page. Tips go through a single Checkya link — no preset amounts." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
+    <Panel title="Donations" desc="Set up your Support page." actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}>
       <Text label="Heading" value={draft.heading} onChange={v => set({ heading: v })} />
       <Area label="Subtext" value={draft.subtext} onChange={v => set({ subtext: v })} rows={2} />
       <Text

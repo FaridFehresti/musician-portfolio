@@ -26,9 +26,12 @@ export const api = {
   // public
   content: () => req('/api/content'),
   recordPlay: (trackId) => req('/api/plays', { method: 'POST', body: JSON.stringify({ trackId }) }),
+  recordEvent: (event) => req('/api/events', { method: 'POST', body: JSON.stringify(event), keepalive: true }),
 
   // analytics (admin)
   analytics: (days = 30) => req(`/api/admin/analytics?days=${days}`),
+  releaseKit: (id) => req(`/api/admin/release-kit/${encodeURIComponent(id)}`),
+  saveReleaseKit: (id, fields) => req(`/api/admin/release-kit/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(fields) }),
 
   // auth
   session: () => req('/api/admin/session'),

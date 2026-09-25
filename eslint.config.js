@@ -25,7 +25,7 @@ export default defineConfig([
   },
   {
     // The Express API + DB layer run on Node, not the browser.
-    files: ['server/**/*.js'],
+    files: ['server/**/*.js', 'scripts/**/*.js', 'tests/**/*.js'],
     languageOptions: { globals: globals.node },
   },
 ])

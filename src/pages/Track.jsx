@@ -9,6 +9,7 @@ import { AnalogButton } from '../components/ui/AnalogButton'
 import { StampTag } from '../components/ui/StampTag'
 import { CrateToggle } from '../components/ui/CrateToggle'
 import { ShareButton } from '../components/ui/ShareButton'
+import { recordOutbound } from '../lib/engagement'
 import { TrackRow } from '../components/records/TrackRow'
 import { VinylDisc } from '../components/records/VinylDisc'
 
@@ -118,6 +119,7 @@ export default function Track() {
           {track.video && (
             <a
               href={track.video}
+              onClick={() => recordOutbound('video', track.title, track.id)}
               target="_blank"
               rel="noreferrer"
               className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted hover:text-accent"

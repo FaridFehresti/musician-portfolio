@@ -1,4 +1,5 @@
 import { useContentStore } from '../store/contentStore'
+import { recordOutbound } from '../lib/engagement'
 import { StampTag } from '../components/ui/StampTag'
 import { SocialIcon } from '../components/icons/SocialIcons'
 
@@ -71,6 +72,7 @@ export default function About() {
                   <a
                     key={l.href}
                     href={l.href}
+                    onClick={() => recordOutbound('custom', l.label)}
                     target="_blank"
                     rel="noreferrer"
                     className="w-fit border-b border-line font-serif text-sm text-muted hover:border-brass hover:text-accent"
@@ -93,6 +95,7 @@ export default function About() {
                   <a
                     key={s.href}
                     href={s.href}
+                    onClick={() => recordOutbound('social', s.label)}
                     target="_blank"
                     rel="noreferrer"
                     title={s.label}

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { usePlayerStore } from '../../../store/playerStore'
+import { recordOutbound } from '../../../lib/engagement'
 
 /**
  * Full-screen video lightbox for a track's optional YouTube / Vimeo link.
@@ -51,7 +52,7 @@ function sourceName(url) {
   return null
 }
 
-export function VideoLightbox({ url, title, onClose }) {
+export function VideoLightbox({ url, title, trackId, onClose }) {
   const embed = toEmbedUrl(url)
   const source = sourceName(url)
 
@@ -123,6 +124,7 @@ export function VideoLightbox({ url, title, onClose }) {
         {url && (
           <a
             href={url}
+            onClick={() => recordOutbound('video', title, trackId)}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={source ? `Watch on ${source} (opens in a new tab)` : 'Open video link (opens in a new tab)'}

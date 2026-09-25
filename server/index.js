@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
   getSetting, setSetting, listTracks, getTrack, upsertTrack, deleteTrack, nextSort,
-  recordPlay, getAnalytics,
+  recordPlay, recordEvent, getAnalytics,
 } from './db.js'
 import {
   DEFAULT_SITE, DEFAULT_ABOUT, DEFAULT_SOCIALS, DEFAULT_LINKS, DEFAULT_DONATION,
@@ -60,7 +60,7 @@ app.use(express.json({ limit: '2mb' }))
 app.use(cookieParser(SECRET))
 
 /* ── Uploads ───────────────────────────────────────────────────────── */
-const UPLOAD_DIR = join(__dirname, 'uploads')
+const UPLOAD_DIR = process.env.CMS_UPLOAD_DIR || join(__dirname, 'uploads')
 const TYPES = { cover: 'covers', audio: 'audio', logo: 'logo', portrait: 'portrait' }
 for (const d of Object.values(TYPES)) mkdirSync(join(UPLOAD_DIR, d), { recursive: true })
 
@@ -140,6 +140,29 @@ app.post('/api/plays', (req, res) => {
   const t = getTrack(id)
   if (!t || !t.published) return res.status(204).end()
   recordPlay(id)
+  res.status(204).end()
+})
+
+const EVENT_TYPES = new Set(['start', 'listen', 'complete', 'share', 'outbound'])
+const DESTINATIONS = new Set(['social', 'custom', 'donation', 'youtube', 'video'])
+app.post('/api/events', (req, res) => {
+  const { id, playbackId, type, trackId, destination, label } = req.body || {}
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuid.test(id) || !EVENT_TYPES.has(type)) return res.status(400).json({ error: 'Invalid event' })
+  if (['start', 'listen', 'complete'].includes(type) && !uuid.test(playbackId)) {
+    return res.status(400).json({ error: 'Invalid playback' })
+  }
+  if (type === 'outbound' && (!DESTINATIONS.has(destination) || typeof label !== 'string' || label.length > 120)) {
+    return res.status(400).json({ error: 'Invalid destination' })
+  }
+  if (type !== 'outbound' && !trackId) return res.status(400).json({ error: 'Missing track' })
+  if (destination === 'video' && !trackId) return res.status(400).json({ error: 'Missing track' })
+  if (type === 'outbound' && trackId && destination !== 'video') return res.status(400).json({ error: 'Invalid track destination' })
+  if (trackId) {
+    const track = getTrack(String(trackId))
+    if (!track || !track.published) return res.status(204).end()
+  }
+  recordEvent({ id, playbackId, type, trackId, destination, label })
   res.status(204).end()
 })
 
@@ -237,6 +260,53 @@ function publicBase(req) {
   const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0]
   return `${proto}://${req.get('host')}`
 }
+function trackShareMeta(track, site, base) {
+  const name = site.artistName || 'Artist'
+  const cover = track?.shareImage || track?.coverArt || site.logoUrl || ''
+  const artist = track?.artist && track.artist.toLocaleLowerCase() !== name.toLocaleLowerCase() ? ` — ${track.artist}` : ''
+  return {
+    title: track ? (track.shareTitle || `${track.title}${artist} · ${name}`) : `${name} — Music`,
+    description: track ? (track.shareDescription || '') : (site.tagline || 'Listen free — no account, no subscription.'),
+    image: cover ? (/^https?:\/\//i.test(cover) ? cover : base + cover) : '',
+  }
+}
+
+const SHARE_FIELDS = { shareTitle: 160, shareDescription: 500, shareImage: 1000, sharePostText: 1000 }
+function releaseKit(track, req) {
+  const base = publicBase(req)
+  const site = getSetting('site', DEFAULT_SITE)
+  const meta = trackShareMeta(track, site, base)
+  const url = track.published ? `${base}/track/${encodeURIComponent(track.id)}` : null
+  const defaultPostText = `Listen to ${track.title}${track.artist ? ` by ${track.artist}` : ''}: {url}`
+  return {
+    ...meta, url, published: track.published,
+    fields: Object.fromEntries(Object.keys(SHARE_FIELDS).map(key => [key, track[key] || ''])),
+    defaults: { title: trackShareMeta({ ...track, shareTitle: '' }, site, base).title, postText: defaultPostText },
+    postText: url ? (track.sharePostText || defaultPostText).replaceAll('{url}', url) : null,
+  }
+}
+
+app.get('/api/admin/release-kit/:id', requireAuth, (req, res) => {
+  const track = getTrack(req.params.id)
+  if (!track) return res.status(404).json({ error: 'Track not found' })
+  res.json(releaseKit(track, req))
+})
+
+app.put('/api/admin/release-kit/:id', requireAuth, (req, res) => {
+  const track = getTrack(req.params.id)
+  if (!track) return res.status(404).json({ error: 'Track not found' })
+  const fields = {}
+  for (const [key, max] of Object.entries(SHARE_FIELDS)) {
+    const value = req.body?.[key]
+    if (typeof value !== 'string' || value.length > max) return res.status(400).json({ error: `Invalid ${key}` })
+    fields[key] = value.trim()
+  }
+  if (fields.shareImage && !(/^(https?:\/\/|\/uploads\/)/i.test(fields.shareImage))) {
+    return res.status(400).json({ error: 'Share image must be an uploaded image or HTTP URL' })
+  }
+  res.json(releaseKit(upsertTrack({ ...track, ...fields }), req))
+})
+
 export function headTags(req) {
   const site = getSetting('site', DEFAULT_SITE)
   const base = publicBase(req)
@@ -245,33 +315,25 @@ export function headTags(req) {
   // Shareable track permalinks (/track/:id) unfurl with the track's own title
   // + cover art; every other route uses the site-wide branding.
   const m = (req.path || req.originalUrl || '').match(/^\/track\/([^/?#]+)/)
-  const track = m ? getTrack(decodeURIComponent(m[1])) : null
-
-  const title = track
-    ? `${track.title}${track.artist ? ` — ${track.artist}` : ''} · ${name}`
-    : `${name} — Music`
-  const desc = track
-    ? `Listen to ${track.title}${track.artist ? ` by ${track.artist}` : ''} — free, no account needed.`
-    : (site.tagline || 'Listen free — no account, no subscription.')
-
-  const abs = (p) => (p ? (/^https?:\/\//i.test(p) ? p : base + p) : '')
+  const candidate = m ? getTrack(decodeURIComponent(m[1])) : null
+  const track = candidate?.published ? candidate : null
+  const { title, description: desc, image: shareImg } = trackShareMeta(track, site, base)
   const favicon  = site.logoUrl || ''                      // tab icon stays the logo
-  const shareImg = abs(track?.coverArt || site.logoUrl)    // social card image
   const ogType   = track ? 'music.song' : 'website'
   const url = base + (req.originalUrl || '/')
   return [
     `<title>${esc(title)}</title>`,
-    `<meta name="description" content="${esc(desc)}" />`,
+    desc && `<meta name="description" content="${esc(desc)}" />`,
     favicon && `<link rel="icon" href="${esc(favicon)}" />`,
     `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:site_name" content="${esc(name)}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
-    `<meta property="og:description" content="${esc(desc)}" />`,
+    desc && `<meta property="og:description" content="${esc(desc)}" />`,
     `<meta property="og:url" content="${esc(url)}" />`,
     shareImg && `<meta property="og:image" content="${esc(shareImg)}" />`,
     `<meta name="twitter:card" content="${shareImg ? 'summary_large_image' : 'summary'}" />`,
     `<meta name="twitter:title" content="${esc(title)}" />`,
-    `<meta name="twitter:description" content="${esc(desc)}" />`,
+    desc && `<meta name="twitter:description" content="${esc(desc)}" />`,
     shareImg && `<meta name="twitter:image" content="${esc(shareImg)}" />`,
   ].filter(Boolean).join('\n    ')
 }

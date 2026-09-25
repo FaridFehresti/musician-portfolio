@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useContentStore } from '../../store/contentStore'
+import { recordOutbound } from '../../lib/engagement'
 import { SocialIcon } from '../../components/icons/SocialIcons'
 
 const FADE_UP = {
@@ -102,7 +103,7 @@ export default function About() {
             {/* Socials */}
             <div className="flex flex-wrap gap-3 mt-2">
               {socials.map(({ label, icon, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" onClick={() => recordOutbound('social', label)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 16px', borderRadius: 20,
@@ -132,7 +133,7 @@ export default function About() {
             {links.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {links.map(({ label, href }) => (
-                  <a key={label + href} href={href} target="_blank" rel="noopener noreferrer"
+                  <a key={label + href} href={href} target="_blank" rel="noopener noreferrer" onClick={() => recordOutbound('custom', label)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       padding: '7px 16px', borderRadius: 20,

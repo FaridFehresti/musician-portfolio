@@ -4,12 +4,14 @@ import { Panel, Toggle, Btn, Saver } from './ui'
 import { useEditor } from './useEditor'
 import { HOME_SLOTS, groupBySlot } from '../../lib/homeSlots'
 import { TrackModal } from './TrackModal'
+import { ReleaseKit } from './ReleaseKit'
 
 /* Music manager — add/edit tracks in a modal form, see the home deck
    arrangement at a glance, and assign each track to a home slot. */
 export function MusicSection({ site, onSaved, onChanged }) {
   const [tracks, setTracks] = useState(null)
   const [modal, setModal] = useState(null)   // null | 'new' | trackObject
+  const [releaseTrack, setReleaseTrack] = useState(null)
   const [stale, setStale] = useState(false)  // server silently ignored a field
 
   // Genre label per home pile (stored in site.homeSlots) — its own draft + save.
@@ -57,6 +59,11 @@ export function MusicSection({ site, onSaved, onChanged }) {
     setTracks(ts => (isNew ? [...(ts || []), saved] : ts.map(t => (t.id === saved.id ? saved : t))))
     notify()
   }
+  function handleReleaseSaved(fields) {
+    setTracks(ts => ts.map(t => t.id === releaseTrack.id ? { ...t, ...fields } : t))
+    setReleaseTrack(t => ({ ...t, ...fields }))
+    notify()
+  }
 
   if (!tracks) return <Panel title="Music"><p style={{ color: 'var(--color-muted)' }}>Loading…</p></Panel>
 
@@ -77,10 +84,10 @@ export function MusicSection({ site, onSaved, onChanged }) {
 
       <Panel
         title="Home deck arrangement"
-        desc="This is exactly how the home card piles are filled. Drag isn’t needed — set each track’s pile from the list below, or in its editor. Give a pile a genre name to label it on the home page."
+        desc="Choose the tracks and labels shown on the home page."
         actions={<Saver onSave={slots.save} dirty={slots.dirty} saving={slots.saving} savedAt={slots.savedAt} />}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        <div className="admin-slot-grid">
           {HOME_SLOTS.map(s => (
             <div key={s.key} style={{
               borderRadius: 12, padding: 12, minHeight: 84,
@@ -124,14 +131,14 @@ export function MusicSection({ site, onSaved, onChanged }) {
 
       <Panel
         title="All tracks"
-        desc="Upload, edit, reorder, and choose where each track appears."
+        desc="Edit tracks, arrange the deck, and prepare share links."
         actions={<Btn onClick={() => setModal('new')}>+ Add track</Btn>}
       >
         {tracks.length === 0 && <p style={{ color: 'var(--color-muted)' }}>No tracks yet — add one above.</p>}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {tracks.map((t, i) => (
-            <div key={t.id} style={{
+            <div key={t.id} className="admin-track-row" style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: 10, borderRadius: 12,
               border: '1px solid color-mix(in srgb, var(--text) 12%, transparent)', background: 'var(--color-bg)',
               opacity: t.published ? 1 : 0.6,
@@ -155,6 +162,7 @@ export function MusicSection({ site, onSaved, onChanged }) {
                 <Toggle checked={t.inLibrary} onChange={v => patch(t.id, { inLibrary: v })} label="Library" />
               </div>
               <Btn variant="ghost" onClick={() => setModal(t)} style={{ flexShrink: 0 }}>Edit</Btn>
+              <Btn variant="ghost" onClick={() => setReleaseTrack(t)} style={{ flexShrink: 0 }}>Release kit</Btn>
               <Btn variant="danger" onClick={() => remove(t.id)} style={{ flexShrink: 0 }}>Delete</Btn>
             </div>
           ))}
@@ -168,6 +176,7 @@ export function MusicSection({ site, onSaved, onChanged }) {
           onSaved={handleTrackSaved}
         />
       )}
+      {releaseTrack && <ReleaseKit track={releaseTrack} onClose={() => setReleaseTrack(null)} onSaved={handleReleaseSaved} />}
     </>
   )
 }

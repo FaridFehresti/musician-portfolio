@@ -2,25 +2,26 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../lib/api'
 import { useContentStore } from '../../store/contentStore'
 import { useThemeStore } from '../../store/themeStore'
-import { Btn } from './ui'
+import { Activity, ArrowUpRight, Disc3, Heart, Link2, LogOut, Palette, UserRound } from 'lucide-react'
+import './admin.css'
 import { BrandingSection } from './BrandingSection'
 import { MusicSection } from './MusicSection'
 import { AnalyticsSection } from './AnalyticsSection'
 import { AboutSection, SocialsSection, LinksSection, DonationSection } from './ContentSection'
 
 const TABS = [
-  ['branding', 'Branding'],
-  ['music', 'Music'],
-  ['analytics', 'Analytics'],
-  ['about', 'About'],
-  ['links', 'Socials & Links'],
-  ['donate', 'Donations'],
+  { id: 'analytics', label: 'Analytics', icon: Activity, summary: 'Audience and growth' },
+  { id: 'music', label: 'Music', icon: Disc3, summary: 'Tracks and releases' },
+  { id: 'branding', label: 'Appearance', icon: Palette, summary: 'Brand and site style' },
+  { id: 'about', label: 'About', icon: UserRound, summary: 'Your story' },
+  { id: 'links', label: 'Links', icon: Link2, summary: 'Socials and destinations' },
+  { id: 'donate', label: 'Support', icon: Heart, summary: 'Donations' },
 ]
 
 export default function AdminApp() {
   const [phase, setPhase] = useState('checking')   // checking | login | ready
   const [content, setContent] = useState(null)
-  const [tab, setTab] = useState('branding')
+  const [tab, setTab] = useState('analytics')
   const applyContent = useContentStore(s => s.applyContent)
   const setTheme = useThemeStore(s => s.setTheme)
 
@@ -57,46 +58,30 @@ export default function AdminApp() {
     return <Login onSuccess={() => loadContent().then(() => setPhase('ready'))} />
   }
 
+  const activeTab = TABS.find(item => item.id === tab)
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* top bar */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 10,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-        padding: '14px 22px', background: 'color-mix(in srgb, var(--color-surface) 92%, transparent)',
-        backdropFilter: 'blur(12px)', borderBottom: '1px solid color-mix(in srgb, var(--text) 12%, transparent)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20, color: 'var(--color-accent)' }}>Studio CMS</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-muted)' }}>{content?.site?.artistName}</span>
+    <div className="admin-app">
+      <aside className="admin-sidebar">
+        <div className="admin-brand"><div className="admin-brand-mark">S</div><div><strong>Studio</strong><span>YOUR CONTROL ROOM</span></div></div>
+        <div className="admin-artist"><span className="admin-artist-avatar">{content?.site?.artistName?.[0] || 'A'}</span><span><strong>{content?.site?.artistName || 'Artist'}</strong><small>Artist workspace</small></span></div>
+        <div className="admin-nav-caption">WORKSPACE</div>
+        <nav className="admin-nav" aria-label="Admin sections">
+          {TABS.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}>
+            <Icon size={19} strokeWidth={1.8} /><span>{label}</span>{tab === id && <i />}
+          </button>)}
+        </nav>
+        <div className="admin-sidebar-footer">
+          <a href="/" target="_blank" rel="noreferrer"><ArrowUpRight size={17} /> View public site</a>
+          <button type="button" onClick={logout}><LogOut size={17} /> Log out</button>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <a href="/" target="_blank" rel="noreferrer"><Btn variant="ghost">View site ↗</Btn></a>
-          <Btn variant="ghost" onClick={logout}>Log out</Btn>
-        </div>
-      </header>
-
-      {/* tabs */}
-      <nav style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '14px 22px 0', maxWidth: 920, margin: '0 auto' }}>
-        {TABS.map(([id, label]) => {
-          const active = tab === id
-          return (
-            <button
-              key={id} onClick={() => setTab(id)}
-              style={{
-                padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12,
-                background: active ? 'var(--color-accent)' : 'transparent',
-                color: active ? 'var(--on-accent, #0a0a0a)' : 'var(--color-muted)',
-                border: active ? 'none' : '1px solid color-mix(in srgb, var(--text) 16%, transparent)',
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </nav>
-
-      <main style={{ maxWidth: 920, margin: '0 auto', padding: '22px' }}>
+      </aside>
+      <div className="admin-workspace">
+        <header className="admin-topbar"><span>STUDIO / {activeTab?.label.toUpperCase()}</span><a href="/" target="_blank" rel="noreferrer">View site <ArrowUpRight size={16} /></a></header>
+        <nav className="admin-mobile-nav" aria-label="Admin sections">
+          {TABS.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}><Icon size={17} />{label}</button>)}
+        </nav>
+        <main className={`admin-main ${tab === 'analytics' ? 'admin-main-wide' : ''}`}>
+          {tab !== 'analytics' && <div className="admin-section-intro"><span className="admin-eyebrow">{activeTab?.summary}</span><h1>{activeTab?.label}</h1></div>}
         {!content
           ? <p style={{ color: 'var(--color-muted)' }}>Loading content…</p>
           : (
@@ -114,7 +99,8 @@ export default function AdminApp() {
               {tab === 'donate' && <DonationSection donation={content.donation} onSaved={onSaved} />}
             </>
           )}
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

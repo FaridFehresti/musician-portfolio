@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useContentStore } from '../../store/contentStore'
+import { recordOutbound } from '../../lib/engagement'
 
 export default function Donate() {
   const donation = useContentStore(s => s.donation)
@@ -91,6 +92,7 @@ export default function Donate() {
             {url ? (
               <a
                 href={url}
+                onClick={() => recordOutbound('donation', 'Tip jar')}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

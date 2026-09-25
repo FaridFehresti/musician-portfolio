@@ -28,7 +28,7 @@ export function BrandingSection({ site, onSaved }) {
   return (
     <Panel
       title="Branding"
-      desc="Your logo replaces the “Artist Name” text in the home hero. Leave it empty to show the name as text instead."
+      desc="Your name, visuals, and public site style."
       actions={<Saver onSave={save} dirty={dirty} saving={saving} savedAt={savedAt} />}
     >
       <Uploader
@@ -37,7 +37,7 @@ export function BrandingSection({ site, onSaved }) {
         accept="image/*"
         value={draft.logoUrl}
         onChange={url => set({ logoUrl: url })}
-        hint="PNG with transparency works best. Shown in the hero and the top-left brand."
+        hint="Appears in the header and home hero."
       />
 
       {draft.logoUrl && (
@@ -55,7 +55,8 @@ export function BrandingSection({ site, onSaved }) {
       <Text label="Tagline" value={draft.tagline} onChange={v => set({ tagline: v })} hint="The line under the hero title." />
       <Text label="YouTube channel URL" value={draft.youtubeUrl} onChange={v => set({ youtubeUrl: v })} placeholder="https://youtube.com/@yourchannel" hint="When set, a “Go to YouTube” button appears on the home Videos section." />
 
-      <Field label="Site template" hint="The entire front-end style visitors see. Switching changes the whole site; reload the public site to see it. Each template has its own themes.">
+      <div className="admin-form-divider">Site style</div>
+      <Field label="Site template" hint="Choose the layout visitors see.">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {TEMPLATE_OPTIONS.map(t => {
             const active = template === t.id
@@ -80,7 +81,7 @@ export function BrandingSection({ site, onSaved }) {
         </div>
       </Field>
 
-      <Field label="Theme" hint="Colour theme for the selected template's public site.">
+      <Field label="Theme" hint="Colors for the public site.">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {themeOpts.map(t => {
             const active = draft.theme === t.id
@@ -107,7 +108,8 @@ export function BrandingSection({ site, onSaved }) {
         </div>
       </Field>
 
-      <Field label="Now Playing effects" hint="Audio-reactive effects on the player card while music plays. They can be combined — each adds its own GPU load.">
+      <details className="admin-details"><summary>Player effects <span>Advanced</span></summary>
+      <Field label="Now Playing effects" hint="Optional effects on the playing card.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <Toggle
             checked={draft.npLightning !== false}
@@ -117,20 +119,21 @@ export function BrandingSection({ site, onSaved }) {
           <Toggle
             checked={draft.npEmbers === true}
             onChange={v => set({ npEmbers: v })}
-            label="Ember drift — the card sheds glowing sparks"
+            label="Ember drift"
           />
           <Toggle
             checked={draft.npPulse === true}
             onChange={v => set({ npPulse: v })}
-            label="Pulse rings — shockwaves ripple out on beats"
+            label="Pulse rings"
           />
           <Toggle
             checked={draft.npOrbit === true}
             onChange={v => set({ npOrbit: v })}
-            label="Comet orbit — lights race around the card"
+            label="Comet orbit"
           />
         </div>
       </Field>
+      </details>
     </Panel>
   )
 }

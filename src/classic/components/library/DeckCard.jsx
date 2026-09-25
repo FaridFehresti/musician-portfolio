@@ -388,7 +388,7 @@ export function DeckCard({ track, index, allTracks, tiltEnabled = true, inDeck =
       {createPortal(
         <AnimatePresence>
           {videoOpen && (
-            <VideoLightbox url={track.video} title={track.title} onClose={() => setVideoOpen(false)} />
+            <VideoLightbox url={track.video} title={track.title} trackId={track.id} onClose={() => setVideoOpen(false)} />
           )}
         </AnimatePresence>,
         document.body,

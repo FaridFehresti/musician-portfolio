@@ -1,4 +1,5 @@
 import { useContentStore } from '../store/contentStore'
+import { recordOutbound } from '../lib/engagement'
 import { AnalogButton } from '../components/ui/AnalogButton'
 
 /* The Tip Jar — a letterpress poster tacked up by the register. */
@@ -39,7 +40,7 @@ export default function Support() {
 
           {donation.checkyaUrl && (
             <div className="mt-12">
-              <AnalogButton as="a" href={donation.checkyaUrl} target="_blank" rel="noreferrer">
+              <AnalogButton as="a" href={donation.checkyaUrl} target="_blank" rel="noreferrer" onClick={() => recordOutbound('donation', 'Tip jar')}>
                 {donation.buttonLabel || 'Leave a tip'}
               </AnalogButton>
             </div>

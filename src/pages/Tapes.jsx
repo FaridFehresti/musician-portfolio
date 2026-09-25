@@ -6,6 +6,7 @@ import { AnalogButton } from '../components/ui/AnalogButton'
 import { TapeCard } from '../components/tapes/TapeCard'
 import { VideoLightbox } from '../components/tapes/VideoLightbox'
 import { youtubeId } from '../lib/youtube'
+import { recordOutbound } from '../lib/engagement'
 
 /* The Tape Archive — every track with a video, racked as cassettes.
    YouTube links play in a lightbox; anything else opens in a new tab. */
@@ -21,7 +22,7 @@ export default function Tapes() {
 
   function openTape(track) {
     if (youtubeId(track.video)) setOpenTrack(track)
-    else window.open(track.video, '_blank', 'noopener,noreferrer')
+    else { recordOutbound('video', track.title, track.id); window.open(track.video, '_blank', 'noopener,noreferrer') }
   }
 
   return (
@@ -35,6 +36,7 @@ export default function Tapes() {
               variant="outline"
               as="a"
               href={site.youtubeUrl}
+              onClick={() => recordOutbound('youtube', 'YouTube channel')}
               target="_blank"
               rel="noreferrer"
               className="!px-4 !py-2 !text-xs"

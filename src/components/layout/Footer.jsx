@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useContentStore } from '../../store/contentStore'
+import { recordOutbound } from '../../lib/engagement'
 import { SocialIcon } from '../icons/SocialIcons'
 
 /* Back of the record sleeve: imprint, press links, socials, copyright. */
@@ -29,7 +30,7 @@ export function Footer() {
             <Link to="/tapes" className="font-body text-sm text-muted hover:text-accent">Tape archive</Link>
             <Link to="/support" className="font-body text-sm text-muted hover:text-accent">Tip jar</Link>
             {links.map((l) => (
-              <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="font-body text-sm text-muted hover:text-accent">
+              <a key={l.href} href={l.href} target="_blank" rel="noreferrer" onClick={() => recordOutbound('custom', l.label)} className="font-body text-sm text-muted hover:text-accent">
                 {l.label}
               </a>
             ))}
@@ -45,6 +46,7 @@ export function Footer() {
               <a
                 key={s.href}
                 href={s.href}
+                onClick={() => recordOutbound('social', s.label)}
                 target="_blank"
                 rel="noreferrer"
                 title={s.label}

@@ -1,182 +1,168 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useState } from 'react'
+import { Activity, ArrowUpRight, CircleHelp, Headphones, MousePointer2, Play, Repeat2, Share2 } from 'lucide-react'
 import { api } from '../../lib/api'
-import { Panel } from './ui'
-
-/* Streams dashboard for the client: all-time + windowed totals, a daily bar
-   chart, and a per-track breakdown. Data comes from /api/admin/analytics,
-   which aggregates the `plays` log written whenever a visitor starts a track. */
+import { growth, percent } from './analyticsMath'
 
 const WINDOWS = [[7, '7 days'], [30, '30 days'], [90, '90 days']]
+const METRICS = [
+  { key: 'listens', label: 'Meaningful listens', short: 'Listens', color: 'mint', icon: Headphones },
+  { key: 'starts', label: 'Play starts', short: 'Starts', color: 'blue', icon: Play },
+  { key: 'completions', label: 'Completions', short: 'Completed', color: 'violet', icon: Repeat2 },
+  { key: 'shares', label: 'Shares', short: 'Shares', color: 'rose', icon: Share2 },
+  { key: 'clicks', label: 'Outbound clicks', short: 'Clicks', color: 'amber', icon: MousePointer2 },
+]
+const fmt = n => new Intl.NumberFormat().format(n ?? 0)
+const rate = value => value == null ? '—' : `${value}%`
 
 export function AnalyticsSection() {
-  const [days, setDays] = useState(30)
+  const [days, setDays] = useState(7)
+  const [metric, setMetric] = useState('listens')
+  const [sort, setSort] = useState('listens')
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async (d) => {
-    setLoading(true); setError(null)
-    try {
-      setData(await api.analytics(d))
-    } catch (e) {
-      setError(e.message || 'Could not load analytics')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  useEffect(() => {
+    let live = true
+    api.analytics(days).then(result => { if (live) { setData(result); setError(null) } })
+      .catch(e => { if (live) setError(e.message || 'Could not load analytics') })
+      .finally(() => { if (live) setLoading(false) })
+    return () => { live = false }
+  }, [days])
 
-  useEffect(() => { load(days) }, [days, load])
+  const selected = METRICS.find(item => item.key === metric)
+  const current = data?.window
+  const previous = data?.previous
+  const sortedTracks = data ? [...data.perTrack].sort((a, b) => (b.window[sort] || 0) - (a.window[sort] || 0) || (b.window.listens || 0) - (a.window.listens || 0)) : []
+  const lastUpdated = data?.trackingSince ? new Date(data.trackingSince).toLocaleDateString() : null
 
-  return (
-    <>
-      <Panel
-        title="Streams"
-        desc="Every time a visitor starts one of your tracks, it's counted here. Numbers update live as people listen."
-        actions={
-          <div style={{ display: 'flex', gap: 6 }}>
-            {WINDOWS.map(([d, label]) => (
-              <button
-                key={d} onClick={() => setDays(d)}
-                style={{
-                  padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)', fontSize: 11,
-                  background: days === d ? 'var(--color-accent)' : 'transparent',
-                  color: days === d ? 'var(--on-accent, #0a0a0a)' : 'var(--color-muted)',
-                  border: days === d ? 'none' : '1px solid color-mix(in srgb, var(--text) 16%, transparent)',
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        }
-      >
-        {error && <p style={{ color: '#ff5470', fontSize: 13 }}>{error}</p>}
-        {loading && !data && <p style={{ color: 'var(--color-muted)' }}>Loading…</p>}
-
-        {data && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 22 }}>
-              <Stat label="Total streams" value={fmt(data.total)} hint="all time" />
-              <Stat label={`Last ${data.days} days`} value={fmt(data.windowStreams)} hint="streams" />
-              <Stat label="Tracks played" value={fmt(data.tracksPlayed)} hint="with ≥1 stream" />
-              <Stat label="Top track" value={data.perTrack[0]?.title || '—'} hint={data.perTrack[0] ? `${fmt(data.perTrack[0].streams)} streams` : 'no plays yet'} small />
-            </div>
-
-            <Chart daily={data.daily} />
-          </>
-        )}
-      </Panel>
-
-      <Panel title="By track" desc="Your catalogue ranked by total streams (all time).">
-        {data && data.perTrack.length === 0 && (
-          <p style={{ color: 'var(--color-muted)' }}>No streams yet. Once visitors start playing your music, you'll see it here.</p>
-        )}
-        {data && data.perTrack.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {data.perTrack.map((t, i) => (
-              <TrackRow key={t.id} rank={i + 1} track={t} max={data.perTrack[0].streams} />
-            ))}
-          </div>
-        )}
-      </Panel>
-    </>
-  )
-}
-
-/* ── Stat card ─────────────────────────────────────────────────────── */
-function Stat({ label, value, hint, small }) {
-  return (
-    <div style={{
-      padding: 16, borderRadius: 14, background: 'var(--color-bg)',
-      border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)',
-    }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-muted)', marginBottom: 8 }}>{label}</div>
-      <div style={{
-        fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--color-text)',
-        fontSize: small ? 18 : 30, lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-      }}>{value}</div>
-      {hint && <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>{hint}</div>}
-    </div>
-  )
-}
-
-/* ── Daily bar chart (pure CSS, no chart lib) ──────────────────────── */
-function Chart({ daily }) {
-  const max = Math.max(1, ...daily.map(d => d.streams))
-  return (
-    <div>
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', gap: 2, height: 120,
-        padding: '0 2px', borderBottom: '1px solid color-mix(in srgb, var(--text) 12%, transparent)',
-      }}>
-        {daily.map(d => (
-          <div
-            key={d.day}
-            title={`${d.day} — ${d.streams} stream${d.streams === 1 ? '' : 's'}`}
-            style={{
-              flex: 1, minWidth: 0, borderRadius: '3px 3px 0 0',
-              height: `${(d.streams / max) * 100}%`, minHeight: d.streams ? 3 : 0,
-              background: d.streams
-                ? 'linear-gradient(to top, color-mix(in srgb, var(--accent) 55%, transparent), var(--color-accent))'
-                : 'transparent',
-              transition: 'height 0.3s',
-            }}
-          />
-        ))}
+  return <div className="analytics-page">
+    <div className="analytics-heading">
+      <div>
+        <span className="admin-eyebrow"><Activity size={14} /> Audience pulse</span>
+        <h2>Listening analytics</h2>
+        <p>See what people play, finish, share, and visit.</p>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)' }}>
-        <span>{shortDay(daily[0]?.day)}</span>
-        <span>{shortDay(daily[daily.length - 1]?.day)}</span>
+      <div className="analytics-period" role="group" aria-label="Analytics date range">
+        {WINDOWS.map(([value, label]) => <button type="button" key={value} aria-pressed={days === value} onClick={() => { setDays(value); setLoading(true) }}>{label}</button>)}
       </div>
     </div>
-  )
-}
 
-/* ── Per-track row ─────────────────────────────────────────────────── */
-function TrackRow({ rank, track, max }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12, padding: 10, borderRadius: 12,
-      background: 'var(--color-bg)', border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)',
-      opacity: track.exists ? 1 : 0.55,
-    }}>
-      <span style={{ width: 22, textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-muted)', flexShrink: 0 }}>{rank}</span>
-      {track.coverArt
-        ? <img src={track.coverArt} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-        : <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, background: 'color-mix(in srgb, var(--text) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>♪</div>}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: 'var(--color-text)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.title}</p>
-        <p style={{ color: 'var(--color-muted)', fontSize: 11, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {track.artist || '—'}{track.lastPlayed ? ` · last ${relTime(track.lastPlayed)}` : ''}
-        </p>
-        {/* mini bar */}
-        <div style={{ height: 4, borderRadius: 2, marginTop: 6, background: 'color-mix(in srgb, var(--text) 10%, transparent)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${(track.streams / max) * 100}%`, background: 'var(--color-accent)', borderRadius: 2 }} />
+    {error && <div className="admin-alert" role="alert">{error}</div>}
+    {loading && !data && <div className="admin-empty">Loading analytics…</div>}
+    {data && <div aria-busy={loading}>
+      <div className="analytics-hero">
+        <div className="analytics-hero-main">
+          <div className="analytics-hero-label"><Headphones size={18} /> Meaningful listens</div>
+          <div className="analytics-hero-number">{fmt(current.listens)}</div>
+          <div className="analytics-hero-foot">
+            <GrowthBadge current={current.listens} previous={previous.listens} />
+            <span>vs previous {days} days</span>
+          </div>
+        </div>
+        <div className="analytics-hero-rates">
+          <RateTile label="Listen rate" value={percent(current.listens, current.trackedStarts)} note="of tracked starts" />
+          <RateTile label="Completion rate" value={percent(current.completions, current.trackedStarts)} note="of tracked starts" />
+          <div className="analytics-hero-key">{fmt(current.trackedStarts)} tracked starts in this period</div>
         </div>
       </div>
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20, color: 'var(--color-text)', lineHeight: 1 }}>{fmt(track.streams)}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-muted)' }}>streams</div>
+
+      <div className="analytics-kpis">
+        {METRICS.map(({ key, label, color, icon: Icon }) => <button className={`analytics-kpi metric-${color}`} type="button" key={key} onClick={() => setMetric(key)} aria-pressed={metric === key}>
+          <span className="analytics-kpi-top"><Icon size={18} /><span>{label}</span></span>
+          <strong>{fmt(current[key])}</strong>
+          <span className="analytics-kpi-bottom"><GrowthBadge current={current[key]} previous={previous[key]} compact /> <span>vs prior period</span></span>
+        </button>)}
       </div>
-    </div>
-  )
+
+      <section className="admin-data-panel analytics-trend" aria-labelledby="trend-title">
+        <div className="admin-panel-heading">
+          <div><span className="admin-eyebrow">Daily activity</span><h3 id="trend-title">Trend</h3></div>
+          <div className="analytics-metric-switch" role="group" aria-label="Trend metric">
+            {METRICS.map(({ key, short }) => <button key={key} type="button" aria-pressed={metric === key} onClick={() => setMetric(key)}>{short}</button>)}
+          </div>
+        </div>
+        <TrendChart daily={data.daily} previousDaily={data.previousDaily} metric={metric} label={selected.label} />
+        <div className="analytics-chart-footer">
+          <span><i className="analytics-line-key current" /> Current period</span>
+          <span><i className="analytics-line-key prior" /> Previous period</span>
+          <strong>{fmt(current[metric])} {selected.short.toLowerCase()} <span>· previous {fmt(previous[metric])}</span></strong>
+        </div>
+      </section>
+
+      <div className="analytics-secondary">
+        <section className="admin-data-panel analytics-funnel" aria-labelledby="journey-title">
+          <div className="admin-panel-heading"><div><span className="admin-eyebrow">Listening journey</span><h3 id="journey-title">From play to finish</h3></div></div>
+          <FunnelRow label="Tracked starts" value={current.trackedStarts} width={100} color="blue" />
+          <FunnelRow label="Meaningful listens" value={current.listens} width={percent(current.listens, current.trackedStarts) ?? 0} color="mint" />
+          <FunnelRow label="Completions" value={current.completions} width={percent(current.completions, current.trackedStarts) ?? 0} color="violet" />
+          <p className="analytics-footnote">A listen means 30 seconds heard, or finishing a shorter track.</p>
+        </section>
+        <section className="admin-data-panel analytics-context" aria-labelledby="context-title">
+          <div className="admin-panel-heading"><div><span className="admin-eyebrow">Context</span><h3 id="context-title">Reading the numbers</h3></div><CircleHelp size={18} /></div>
+          <div className="analytics-context-number"><span>All-time play starts</span><strong>{fmt(data.totals.starts)}</strong></div>
+          <div className="analytics-context-number"><span>Earlier starts preserved</span><strong>{fmt(data.historicalStarts)}</strong></div>
+          <p>{lastUpdated ? `Engagement tracking began ${lastUpdated}.` : 'Engagement tracking has no events yet.'} Rates use tracked starts only. Days use UTC; today is still in progress.</p>
+        </section>
+      </div>
+
+      <section className="admin-data-panel analytics-tracks" aria-labelledby="tracks-title">
+        <div className="admin-panel-heading">
+          <div><span className="admin-eyebrow">Track performance</span><h3 id="tracks-title">Your music</h3></div>
+          <label className="analytics-sort">Sort by <select value={sort} onChange={e => setSort(e.target.value)}>{METRICS.map(({ key, short }) => <option key={key} value={key}>{short}</option>)}</select></label>
+        </div>
+        {sortedTracks.length === 0 ? <div className="admin-empty">No track activity yet.</div> : <div className="analytics-table-wrap"><table className="analytics-table">
+          <thead><tr><th>Track</th><th>Starts</th><th>Listens</th><th>Listen rate</th><th>Completed</th><th>Shares</th><th>Video clicks</th><th>Listen growth</th></tr></thead>
+          <tbody>{sortedTracks.map(track => <tr key={track.id}>
+            <th scope="row"><div className="analytics-track-name">{track.coverArt ? <img src={track.coverArt} alt="" /> : <span className="analytics-track-placeholder">♪</span>}<span><strong>{track.title}</strong><small>{track.artist || 'Unknown artist'}{!track.exists ? ' · deleted' : ''}</small></span></div></th>
+            <td>{fmt(track.window.starts)}</td><td className="analytics-emphasis">{fmt(track.window.listens)}</td>
+            <td>{rate(percent(track.window.listens, track.window.trackedStarts))}</td>
+            <td>{fmt(track.window.completions)}</td><td>{fmt(track.window.shares)}</td><td>{fmt(track.window.clicks)}</td>
+            <td><GrowthBadge current={track.window.listens} previous={track.previous.listens} compact /></td>
+          </tr>)}</tbody>
+        </table></div>}
+      </section>
+
+      <section className="admin-data-panel analytics-outbound" aria-labelledby="outbound-title">
+        <div className="admin-panel-heading"><div><span className="admin-eyebrow">Beyond the site</span><h3 id="outbound-title">Outbound clicks</h3></div><ArrowUpRight size={20} /></div>
+        {data.outbound.length === 0 ? <div className="admin-empty">No outbound clicks in this period.</div> : <div className="analytics-outbound-list">
+          {data.outbound.map((item, index) => <div key={`${item.destination}-${item.label}-${index}`} className="analytics-outbound-row">
+            <span className="analytics-outbound-type">{item.destination}</span><span className="analytics-outbound-name">{item.label || 'Unlabelled link'}</span>
+            <div className="analytics-outbound-bar"><span style={{ width: `${item.clicks / data.outbound[0].clicks * 100}%` }} /></div><strong>{fmt(item.clicks)}</strong>
+          </div>)}
+        </div>}
+      </section>
+    </div>}
+  </div>
 }
 
-/* ── helpers ───────────────────────────────────────────────────────── */
-function fmt(n) {
-  return new Intl.NumberFormat().format(n ?? 0)
+function GrowthBadge({ current, previous, compact = false }) {
+  const result = growth(current, previous)
+  return <span className={`analytics-growth growth-${result.direction}${compact ? ' compact' : ''}`}>{result.text}</span>
 }
-function shortDay(iso) {
-  if (!iso) return ''
-  const d = new Date(iso + 'T00:00:00Z')
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+
+function RateTile({ label, value, note }) {
+  return <div className="analytics-rate"><span>{label}</span><strong>{rate(value)}</strong><small>{note}</small></div>
 }
-function relTime(ms) {
-  const s = Math.max(0, (Date.now() - ms) / 1000)
-  if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`
-  return new Date(ms).toLocaleDateString()
+
+function FunnelRow({ label, value, width, color }) {
+  return <div className={`analytics-funnel-row metric-${color}`}><div><span>{label}</span><strong>{fmt(value)}</strong></div><div className="analytics-funnel-bar"><span style={{ width: `${Math.min(100, width)}%` }} /></div></div>
+}
+
+function TrendChart({ daily, previousDaily, metric, label }) {
+  const values = daily.map(day => day[metric] || 0)
+  const oldValues = previousDaily.map(day => day[metric] || 0)
+  const max = Math.max(1, ...values, ...oldValues)
+  const left = 38, top = 16, width = 884, height = 194
+  const point = (value, index) => `${left + index / Math.max(1, values.length - 1) * width},${top + height - value / max * height}`
+  const line = numbers => numbers.map((value, index) => `${index ? 'L' : 'M'}${point(value, index)}`).join(' ')
+  const area = `${line(values)} L${left + width},${top + height} L${left},${top + height} Z`
+  const ticks = [0, 0.5, 1]
+  return <div className="analytics-chart"><svg viewBox="0 0 960 235" role="img" aria-label={`${label} each day, compared with the previous ${daily.length} days`} preserveAspectRatio="none">
+    <defs><linearGradient id="analytics-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#69e2d0" stopOpacity=".35" /><stop offset="100%" stopColor="#69e2d0" stopOpacity="0" /></linearGradient></defs>
+    {ticks.map(tick => <g key={tick}><line x1={left} x2={left + width} y1={top + height - tick * height} y2={top + height - tick * height} stroke="rgba(176,193,227,.15)" strokeDasharray="4 5" /><text x="30" y={top + height - tick * height + 4} textAnchor="end" fill="#91a3c5" fontSize="11">{fmt(Math.round(max * tick))}</text></g>)}
+    <path d={area} fill="url(#analytics-area)" />
+    <path d={line(oldValues)} fill="none" stroke="#8d94b0" strokeWidth="2" strokeDasharray="7 7" vectorEffect="non-scaling-stroke" />
+    <path d={line(values)} fill="none" stroke="#69e2d0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+  </svg><div className="analytics-chart-dates"><span>{daily[0]?.day}</span><span>{daily[daily.length - 1]?.day}</span></div></div>
 }

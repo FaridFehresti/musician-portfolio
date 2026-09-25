@@ -6,13 +6,13 @@ import { api } from '../../lib/api'
 
 export function Panel({ title, desc, actions, children }) {
   return (
-    <section style={{
+    <section className="admin-panel" style={{
       background: 'var(--color-surface)', borderRadius: 16, padding: 22,
       border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)',
       boxShadow: '0 12px 32px rgba(0,0,0,0.18)', marginBottom: 22,
     }}>
       {(title || actions) && (
-        <header style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: desc ? 6 : 18 }}>
+        <header className="admin-panel-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: desc ? 6 : 18 }}>
           <div>
             {title && <h2 style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, color: 'var(--color-text)' }}>{title}</h2>}
           </div>
@@ -163,7 +163,7 @@ export function Uploader({ label, hint, type, value, onChange, accept, preview =
 export function Saver({ onSave, dirty, saving, savedAt }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      {savedAt && !dirty && <span style={{ fontSize: 12, color: 'var(--color-muted)', fontFamily: 'var(--font-mono)' }}>Saved ✓</span>}
+      {savedAt > 0 && !dirty && <span style={{ fontSize: 12, color: 'var(--color-muted)', fontFamily: 'var(--font-mono)' }}>Saved ✓</span>}
       <Btn onClick={onSave} disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save changes'}</Btn>
     </div>
   )

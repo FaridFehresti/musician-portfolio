@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { VideoLightbox } from '../ui/VideoLightbox'
+import { recordOutbound } from '../../../lib/engagement'
 import { YoutubeIcon } from '../../../components/icons/SocialIcons'
 import { GENRE_GRADIENTS } from '../../../data/tracks'
 
@@ -93,7 +94,7 @@ export function VideosSection({ tracks, youtubeUrl, limit = 4 }) {
           <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
             {youtubeUrl && (
               <a
-                href={youtubeUrl} target="_blank" rel="noopener noreferrer"
+                href={youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={() => recordOutbound('youtube', 'YouTube channel')}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999,
                   border: '1px solid color-mix(in srgb, var(--accent) 50%, transparent)', color: 'var(--color-accent)',
@@ -126,7 +127,7 @@ export function VideosSection({ tracks, youtubeUrl, limit = 4 }) {
 
       {createPortal(
         <AnimatePresence>
-          {open && <VideoLightbox url={open.video} title={open.title} onClose={() => setOpen(null)} />}
+          {open && <VideoLightbox url={open.video} title={open.title} trackId={open.id} onClose={() => setOpen(null)} />}
         </AnimatePresence>,
         document.body,
       )}
